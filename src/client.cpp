@@ -1,6 +1,9 @@
 #include "../include/global.h"
 #include "../include/logger.h"
 
+#define STDIN 0
+#define MAX_INPUT_SIZE 65535
+
 int client_socket_fd;
 struct addrinfo client_hints;
 struct addrinfo * client_addrinfo;
@@ -51,6 +54,7 @@ int client(string port_number){
     else if(client_initialization_status == 0){
         printf("client is Alive\n");
         fd_set client_readfds;
+        string command;
 
         for(;;){
             printf("[PA1-Client@CSE489/589]$ ");
@@ -61,23 +65,28 @@ int client(string port_number){
             select(STDIN+1, &client_readfds, NULL, NULL, NULL);
             
             if(FD_ISSET(STDIN, &client_readfds)){
-                char *command = (char*) malloc(sizeof(char)*MAX_INPUT_SIZE);
-                memset(command, '\0', MAX_INPUT_SIZE);
-                if(fgets(command, MAX_INPUT_SIZE, stdin) == NULL){
-                    return -1;
-                }
-                string command_str = command;
-                if(command[strlen(command) - 1] == '\n')
-                {
-                    command_str = command_str.substr(0, command_str.length() - 1);
-                }
-                vector<string> split_cmd = split_string(command_str, " ");
-                fflush(stdin);
+                // char *command = (char*) malloc(sizeof(char)*MAX_INPUT_SIZE);
+                // memset(command, '\0', MAX_INPUT_SIZE);
+                // if(fgets(command, MAX_INPUT_SIZE, stdin) == NULL){
+                //     return -1;
+                // }
+                // string command_str = command;
+                // if(command[strlen(command) - 1] == '\n')
+                // {
+                //     command_str = command_str.substr(0, command_str.length() - 1);
+                // }
+                // vector<string> split_cmd = split_string(command_str, " ");
+                // fflush(stdin);
+                getline(cin, command);
+                cout << "You entered: " << command << endl;
 
-                if (split_cmd[0] == "AUTHOR"){
-                    printf("Author is not implemented yet\n");
+                if (command == "AUTHOR"){
+                    print_log_success(command);
+                    string ubitname = "rahulyad";
+                    cse4589_print_and_log("I, %s, have read and understood the course academic integrity policy.\n", ubitname.c_str());
+                    print_log_end(command);
                 } 
-                else if (split_cmd[0] == "IP"){
+                else if (command == "IP"){
                     client_ip = set_ip();
                     // if(client_ip == NULL){
                     //     perror("Unable to set IP...");
@@ -87,12 +96,13 @@ int client(string port_number){
                     cse4589_print_and_log("IP:%s\n", client_ip.c_str());
                     print_log_end("IP");
                 }
-                else if (split_cmd[0] == "PORT"){
+                else if (command == "PORT"){
                     client_port = string_to_int(port_number);
-                    cout << "Client port: " << client_port << endl;
-                    printf("Port is not implemented yet\n");
+                    print_log_success("PORT");
+                    cse4589_print_and_log("PORT:%d\n", client_port);
+                    print_log_end("PORT");
                 }
-                else if (split_cmd[0] == "LIST"){
+                else if (command == "LIST"){
                     printf("List is not implemented yet\n");
                 }
             }

@@ -1,15 +1,8 @@
 #include "../include/global.h"
 #include "../include/logger.h"
 
-int string_to_int(string str)
-{
-    int n = str.length(), res = 0, j = 1, i;
-    for(i = n - 1; i >= 0; i --)
-    {
-        res += (str[i] - '0') * j;
-        j *= 10;
-    }
-    return res;
+int string_to_int(string str) {
+    return atoi(str.c_str());
 }
 
 string set_ip(){

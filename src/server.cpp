@@ -1,10 +1,14 @@
 #include "../include/global.h"
 #include "../include/logger.h"
 
+#define STDIN 0
+#define MAX_INPUT_SIZE 65535
+
 int server_socket_fd;
 struct addrinfo server_hints;
 struct addrinfo * server_addrinfo;
 string server_ip;
+int server_port;
 
 int server_initialization(string port_number){
     const char *server_port_number_pointer = port_number.c_str(); 
@@ -48,6 +52,7 @@ int server(string port_number){
     }
     else if(server_initialization_status == 0){
         int listen_status = listen(server_socket_fd, 10);
+        string command;
 
         if(listen_status == -1){
             printf("Server is unable to listen. Closing application...\n");
@@ -66,36 +71,40 @@ int server(string port_number){
                 select(STDIN+1, &server_readfds, NULL, NULL, NULL);
 
                 if(FD_ISSET(STDIN, &server_readfds)){
-                    char *command = (char*) malloc(sizeof(char)*MAX_INPUT_SIZE);
-                    memset(command, '\0', MAX_INPUT_SIZE);
-                    if(fgets(command, MAX_INPUT_SIZE, stdin) == NULL){
-                        return -1;
-                    }
-                    string command_str = command;
-                    if(command[strlen(command) - 1] == '\n')
-                    {
-                        command_str = command_str.substr(0, command_str.length() - 1);
-                    }
-                    vector<string> split_cmd = split_string(command_str, " ");
-                    fflush(stdin);
+                    // char *command = (char*) malloc(sizeof(char)*MAX_INPUT_SIZE);
+                    // memset(command, '\0', MAX_INPUT_SIZE);
+                    // if(fgets(command, MAX_INPUT_SIZE, stdin) == NULL){
+                    //     return -1;
+                    // }
+                    // string command_str = command;
+                    // if(command[strlen(command) - 1] == '\n')
+                    // {
+                    //     command_str = command_str.substr(0, command_str.length() - 1);
+                    // }
+                    // vector<string> split_cmd = split_string(command_str, " ");
+                    // fflush(stdin);
+                    getline(cin, command);
+                    cout << "You entered: " << command << endl;
 
-                    if(split_cmd[0] == "AUTHOR"){
+                    if(command == "AUTHOR"){
                         print_log_success(command);
-                        string ubitname = "kchand";
+                        string ubitname = "rahulyad";
                         cse4589_print_and_log("I, %s, have read and understood the course academic integrity policy.\n", ubitname.c_str());
                         print_log_end(command);
                     }
-                    else if(split_cmd[0] == "IP"){
+                    else if(command == "IP"){
                         server_ip = set_ip();
-                        // if(server_ip == NULL){
-                        //     perror("Unable to set IP...");
-                        //     return -1;
-                        // }
                         print_log_success("IP");
                         cse4589_print_and_log("IP:%s\n", server_ip.c_str());
                         print_log_end("IP");
                     }
-                    else if(split_cmd[0] == "LIST"){
+                    else if (command == "PORT"){
+                        server_port = string_to_int(port_number);
+                        print_log_success("PORT");
+                        cse4589_print_and_log("PORT:%d\n", server_port);
+                        print_log_end("PORT");
+                    }
+                    else if(command == "LIST"){
                         printf("List is not implemented yet\n");
                     }
                 }

@@ -11,5 +11,5 @@ void print_log_end(string command)
 {
 
     cse4589_print_and_log("[%s:END]\n", command.c_str());
-    printf("\n");
+    // printf("\n");
 }

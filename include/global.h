@@ -23,9 +23,6 @@
 #include <sstream>
 #include <string>
 
-#define STDIN 0
-#define MAX_INPUT_SIZE 65535
-
 using namespace std;
 
 #define FOR_RANGE(start, end, code_block) \
@@ -37,7 +34,7 @@ for (int i = (start); i < (end); i++) { \
 void print_log_success(string command);
 void print_log_end(string command);
 
-// helper_functions.cpp functions
+//helper_functions.cpp functions
 int string_to_int(string str);
 string set_ip();
 vector<string> split_string(string input_string, string delimiter);
