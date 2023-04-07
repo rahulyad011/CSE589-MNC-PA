@@ -6,28 +6,9 @@ struct addrinfo server_hints;
 struct addrinfo * server_addrinfo;
 string server_ip;
 
-int set_server_ip(){
-    struct sockaddr_in server_sockaddr_in;
-    memset(&server_sockaddr_in, 0, sizeof(sockaddr_in));
-    server_sockaddr_in.sin_family = AF_INET;
-    server_sockaddr_in.sin_addr.s_addr = inet_addr("8.8.8.8");
-    server_sockaddr_in.sin_port = htons(53);
-
-    int server_socket = socket(AF_INET, SOCK_DGRAM, 0);
-    connect(server_socket, (const sockaddr*)&server_sockaddr_in, sizeof(sockaddr_in));
-
-    struct sockaddr_in server_sockaddr_in2;
-    socklen_t length = sizeof(sockaddr_in);
-    getsockname(server_socket, (sockaddr*)&server_sockaddr_in2, &length);
-    server_ip = inet_ntop(AF_INET, &server_sockaddr_in2.sin_addr, (char*) malloc(INET_ADDRSTRLEN), INET_ADDRSTRLEN);
-
-    close(server_socket);
-    return 0;
-}
-
 int server_initialization(string port_number){
     const char *server_port_number_pointer = port_number.c_str(); 
-    
+
     memset(&server_hints, 0, sizeof(server_addrinfo));
     server_hints.ai_family = AF_INET;
     server_hints.ai_socktype = SOCK_STREAM;
@@ -56,7 +37,7 @@ int server_initialization(string port_number){
 }
 
 int server(string port_number){
-    printf("Initialising Server\n");
+    printf("Initialising server\n");
     
     int server_initialization_status;
     server_initialization_status = server_initialization(port_number);
@@ -74,25 +55,49 @@ int server(string port_number){
         }
         else if(listen_status == 0){
             printf("Server is Alive!\n");
+            fd_set server_readfds;
             
             for(;;){
-                printf("Please enter your command:\n");
-                string command;
-                cin >> command;
+                printf("\n[PA1-Server@CSE489/589]$ ");
 
-                if(command == "AUTHOR"){
-                    printf("Author is not implemented yet\n");
-                } 
-                else if(command == "IP"){
-                    int server_ip_status = set_server_ip();
-                    if(server_ip_status == -1){
-                        printf("Unable to setup server ip...\n");
+                FD_ZERO(&server_readfds);
+                fflush(stdout);
+                FD_SET(STDIN, &server_readfds);
+                select(STDIN+1, &server_readfds, NULL, NULL, NULL);
+
+                if(FD_ISSET(STDIN, &server_readfds)){
+                    char *command = (char*) malloc(sizeof(char)*MAX_INPUT_SIZE);
+                    memset(command, '\0', MAX_INPUT_SIZE);
+                    if(fgets(command, MAX_INPUT_SIZE, stdin) == NULL){
                         return -1;
                     }
-                    cout<<"Server IP: "<<server_ip<<endl;
-                }
-                else if(command == "LIST"){
-                    printf("List is not implemented yet\n");
+                    string command_str = command;
+                    if(command[strlen(command) - 1] == '\n')
+                    {
+                        command_str = command_str.substr(0, command_str.length() - 1);
+                    }
+                    vector<string> split_cmd = split_string(command_str, " ");
+                    fflush(stdin);
+
+                    if(split_cmd[0] == "AUTHOR"){
+                        print_log_success(command);
+                        string ubitname = "kchand";
+                        cse4589_print_and_log("I, %s, have read and understood the course academic integrity policy.\n", ubitname.c_str());
+                        print_log_end(command);
+                    }
+                    else if(split_cmd[0] == "IP"){
+                        server_ip = set_ip();
+                        // if(server_ip == NULL){
+                        //     perror("Unable to set IP...");
+                        //     return -1;
+                        // }
+                        print_log_success("IP");
+                        cse4589_print_and_log("IP:%s\n", server_ip.c_str());
+                        print_log_end("IP");
+                    }
+                    else if(split_cmd[0] == "LIST"){
+                        printf("List is not implemented yet\n");
+                    }
                 }
             }
         }
