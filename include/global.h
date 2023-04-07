@@ -30,4 +30,13 @@ for (int i = (start); i < (end); i++) { \
     code_block \
 }
 
+//helper_functions.cpp functions
+int string_to_int(string str);
+
+// client.cpp functions
+int client(string port_number);
+
+// server.cpp functions
+int server(string port_num);
+
 #endif

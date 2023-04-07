@@ -41,6 +41,8 @@ int main(int argc, char **argv)
 
 	/*Start Here*/
 
+	printf("Starting main method\n");
+
 	if(argc != 3)
 	{
 		printf("Please send right command with 2 argument!");
@@ -53,7 +55,7 @@ int main(int argc, char **argv)
 
 	FOR_RANGE(0, 2, {
         if(*argv[1] == v[i])
-			(v[i] == 's') ? server_process(argv[2]) : client_process(argv[2]);
+			(v[i] == 's') ? server(argv[2]) : client(argv[2]);
 
 		else if(i==1)
 			return -1;
