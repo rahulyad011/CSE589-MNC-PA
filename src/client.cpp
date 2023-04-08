@@ -13,27 +13,50 @@ char client_hostname[256];
 
 int client_initialization(string port_number){
     const char *client_port_number_pointer = port_number.c_str(); 
-    
+    struct addrinfo * p;
+    int yes = 1;
+
     memset(&client_hints, 0, sizeof(client_addrinfo));
     client_hints.ai_family = AF_INET;
     client_hints.ai_socktype = SOCK_STREAM;
     client_hints.ai_flags = AI_PASSIVE;
 
-    int getaddrinfo_status = getaddrinfo(NULL, client_port_number_pointer, &client_hints, &client_addrinfo);
-    if(getaddrinfo_status != 0){
-        printf("Error in executing getaddrinfo_status()...\n");
+    int client_getaddrinfo_status = getaddrinfo(NULL, client_port_number_pointer, &client_hints, &client_addrinfo);
+    if(client_getaddrinfo_status != 0){
+        printf("Error in executing client_getaddrinfo_status()...\n");
         return -1;
     }
 
-    client_socket_fd = socket(client_addrinfo->ai_family, client_addrinfo->ai_socktype, client_addrinfo->ai_protocol);
-    if(client_socket_fd < 0){
-        printf("Error in executing socket()...\n");
-        return -1;
+    for(p = client_addrinfo; p != NULL; p = p->ai_next) {
+        client_socket_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (client_socket_fd < 0) { 
+            continue;
+        }
+        
+        // lose the pesky "address already in use" error message
+        setsockopt(client_socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+
+        if (bind(client_socket_fd, p->ai_addr, p->ai_addrlen) < 0) {
+            close(client_socket_fd);
+            continue;
+        }
+
+        break;
     }
 
-    int bind_status = bind(client_socket_fd, client_addrinfo->ai_addr, client_addrinfo->ai_addrlen);
-    if(bind_status < 0){
-        printf("Error in executing bind()...\n");
+    // client_socket_fd = socket(client_addrinfo->ai_family, client_addrinfo->ai_socktype, client_addrinfo->ai_protocol);
+    // if(client_socket_fd < 0){
+    //     printf("Error in executing socket()...\n");
+    //     return -1;
+    // }
+
+    // int bind_status = bind(client_socket_fd, client_addrinfo->ai_addr, client_addrinfo->ai_addrlen);
+    // if(bind_status < 0){
+    //     printf("Error in executing bind()...\n");
+    //     return -1;
+    // }
+    if (p == NULL) {
+        fprintf(stderr, "selectclient: failed to bind\n");
         return -1;
     }
 
@@ -41,11 +64,22 @@ int client_initialization(string port_number){
     return 0;
 }
 
-
 int client(string port_number){
     printf("Initialising client\n");
     
     int client_initialization_status;
+    fd_set client_masterfds;
+    fd_set client_readfds;
+    FD_ZERO( &client_masterfds);
+    FD_ZERO( &client_readfds);
+    int fdmax, newfd;
+    socklen_t addrlen;
+    struct sockaddr_storage remoteaddr; // client address
+    client_initialization_status = client_initialization(port_number);
+    char remoteIP[INET6_ADDRSTRLEN];
+    char buf[256];    // buffer for client data
+    int nbytes;
+    int i, j;
     client_initialization_status = client_initialization(port_number);
 
     if(client_initialization_status == -1){
@@ -54,15 +88,14 @@ int client(string port_number){
     }
     else if(client_initialization_status == 0){
         printf("client is Alive\n");
-
+        FD_SET(client_socket_fd, &client_masterfds);
+        fdmax = client_socket_fd;
         string command;
         bool client_login_status = false;
 
         for(;;){
             printf("[PA1-Client@CSE489/589]$ ");
-
-            fd_set client_readfds;
-            FD_ZERO( & client_readfds);
+            client_readfds = client_masterfds;
             if(!client_login_status){
                 FD_SET(STDIN, & client_readfds);
             }
@@ -114,9 +147,9 @@ int client(string port_number){
                     cout<<"split_command[0]= "<<split_command[0]<<endl;
                     cout<<"split_command[1]= "<<split_command[1]<<endl;
                     cout<<"split_command[2]= "<<split_command[2]<<endl;
-                    int server_getaddrinfo_status = getaddrinfo(split_command[1].c_str(), split_command[2].c_str(), &client_hints, &client_addrinfo);
-                    if(server_getaddrinfo_status != 0){
-                        perror("Error in executing getaddrinfo_status() for server from client...\n");
+                    int client_getaddrinfo_status = getaddrinfo(split_command[1].c_str(), split_command[2].c_str(), &client_hints, &client_addrinfo);
+                    if(client_getaddrinfo_status != 0){
+                        perror("Error in executing client_getaddrinfo_status() for client from client...\n");
                         return -1;
                     }
 

@@ -39,6 +39,7 @@ int string_to_int(string str);
 string set_ip();
 vector<string> split_string(string input_string, string delimiter);
 void print_fd_set(fd_set& set);
+void *get_in_addr(struct sockaddr *sa);
 
 // client.cpp functions
 int client(string port_number);
