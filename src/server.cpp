@@ -10,6 +10,8 @@ struct addrinfo * server_addrinfo;
 string server_ip;
 int server_port;
 
+extern vector<SocketObject> socketlist;
+
 int server_initialization(string port_number){
     const char *server_port_number_pointer = port_number.c_str(); 
     struct addrinfo * p;
@@ -66,6 +68,8 @@ int server_initialization(string port_number){
 
 int server(string port_number){
     printf("Initialising server\n");
+
+    server_ip = set_ip();
     
     int server_initialization_status;
     fd_set server_masterfds;
@@ -90,22 +94,31 @@ int server(string port_number){
         string command;
 
         if(listen_status == -1){
-            printf("Server is unable to listen. Closing application...\n");
+            perror("Server is unable to listen. Closing application...\n");
             perror("listen");
             return -1;
         }
         else if(listen_status == 0){
             printf("Server is Alive!\n");
             FD_SET(server_socket_fd, &server_masterfds);
-            FD_SET(STDIN, & server_masterfds);
+            FD_SET(STDIN, &server_masterfds);
             int fdmax = server_socket_fd > STDIN ? server_socket_fd : STDIN;
             // fdmax = server_socket_fd;
-
             for(;;){
                 printf("\n[PA1-Server@CSE489/589]$ ");
+                fflush(stdout);
+
                 server_readfds = server_masterfds;
-                // fflush(stdout);
+                // cout<<"server_masterfds = ";
+                // print_fd_set(server_masterfds);
+                // cout<<endl;
+
+                // cout<<"server_readfds = ";
+                // print_fd_set(server_readfds);
+                // cout<<endl;
+
                 int select_status = select(fdmax+1, &server_readfds, NULL, NULL, NULL);
+
                 if(select_status == -1){
                     perror("Error in executing select()...\n");
                     return -1;
@@ -114,6 +127,11 @@ int server(string port_number){
                 int index;
                 for(index=0; index <= fdmax; index++){
                     if(FD_ISSET(index, &server_readfds)){
+
+                        cout<<"server_readfds = ";
+                        print_fd_set(server_readfds);
+                        cout<<endl;
+
                         // Handle Standard Input
                         if(index == STDIN){
                             getline(cin, command);
@@ -126,7 +144,6 @@ int server(string port_number){
                                 print_log_end(command);
                             }
                             else if(command == "IP"){
-                                server_ip = set_ip();
                                 print_log_success("IP");
                                 cse4589_print_and_log("IP:%s\n", server_ip.c_str());
                                 print_log_end("IP");
@@ -145,9 +162,7 @@ int server(string port_number){
                         else if(index == server_socket_fd){
                             printf("Inside Server Listener\n");
                             addrlen = sizeof remoteaddr;
-                            newfd = accept(server_socket_fd,
-                                (struct sockaddr *)&remoteaddr,
-                                &addrlen);
+                            newfd = accept(server_socket_fd, (struct sockaddr *)&remoteaddr, &addrlen);
 
                             if (newfd == -1) {
                                 perror("accept");
@@ -156,41 +171,84 @@ int server(string port_number){
                                 if (newfd > fdmax) {    // keep track of the max
                                     fdmax = newfd;
                                 }
-                                printf("selectserver: new connection from %s on "
-                                    "socket %d\n",
-                                    inet_ntop(remoteaddr.ss_family,
-                                        get_in_addr((struct sockaddr*)&remoteaddr),
-                                        remoteIP, INET6_ADDRSTRLEN),newfd);
+                                printf("selectserver: new connection from %s on socket %d\n", 
+                                        inet_ntop(remoteaddr.ss_family,get_in_addr((struct sockaddr*)&remoteaddr),remoteIP, INET6_ADDRSTRLEN),
+                                        newfd);
                             }
-                            return -1;
-                        }
+
+                            // return -1;
+                        } 
                         else
                         {
                             // handle data from a client
-                            if ((nbytes = recv(i, buf, sizeof buf, 0)) <= 0) {
+                            if ((nbytes = recv(index, buf, sizeof buf, 0)) <= 0) {
                                 // got error or connection closed by client
                                 if (nbytes == 0) {
                                     // connection closed
-                                    printf("selectserver: socket %d hung up\n", i);
+                                    printf("selectserver: socket %d hung up\n", index);
                                 } else {
                                     perror("recv");
                                 }
-                                close(i); // bye!
-                                FD_CLR(i, &server_masterfds); // remove from master set
+                                close(index); // bye!
+                                FD_CLR(index, &server_masterfds); // remove from master set
                             } 
                             else 
                             {
-                                // we got some data from a client
-                                for(j = 0; j <= fdmax; j++) {
-                                    // send to everyone!
-                                    if (FD_ISSET(j, &server_masterfds)) {
-                                        // except the listener and ourselves
-                                        if (j != server_socket_fd && j != i) {
-                                            if (send(j, buf, nbytes, 0) == -1) {
-                                                perror("send");
-                                            }
+                                // // we got some data from a client
+                                // for(j = 0; j <= fdmax; j++) {
+                                //     // send to everyone!
+                                //     if (FD_ISSET(j, &server_masterfds)) {
+                                //         // except the listener and ourselves
+                                //         if (j != server_socket_fd && j != index) {
+                                //             if (send(j, buf, nbytes, 0) == -1) {
+                                //                 perror("send");
+                                //                 printf("send error");
+                                //             }
+                                //         }
+                                //     }
+                                // }
+
+                                string client_command = buf;
+                                cout<<"client_command= "<<client_command<<endl;
+                                vector<string> split_client_command = split_string(client_command, " ");
+
+                                if(split_client_command[0] == "LOGIN"){
+                                    string incomming_ip = split_client_command[2];
+                                    SocketObject* currentSocketObject = is_exist_Socket(incomming_ip);
+
+                                    // Existing Client
+                                    if(currentSocketObject != NULL){
+                                        currentSocketObject->status = "logged-in";
+                                    }
+                                    // New Client, Add it in Socket List
+                                    else{
+                                        currentSocketObject = newSocketObject(newfd, split_client_command[1], split_client_command[2], split_client_command[3]);
+                                        socketlist.push_back(*currentSocketObject);
+                                        cout<<"Client with HOSTNAME= "<< split_client_command[1]<<", IP= "<< split_client_command[2]<<", PORT= "<<split_client_command[3]<<" Logged In Successfully"<<endl;
+                                    }
+
+                                    // Inform the client about existing live conections
+                                    string message = "LIST_LOGIN ";
+                                    for (vector<SocketObject>::iterator it = socketlist.begin(); it != socketlist.end(); ++it) {
+                                        if (it->status == "logged-in") {
+                                            message += it->hostname + " " + it->ip + " " + it->port + " ";
                                         }
                                     }
+                                    message += "\n";
+
+                                    int ll_send_status = send(currentSocketObject->cfd, message.c_str(), strlen(message.c_str()), 0);
+                                    if(ll_send_status <= 0){
+                                        perror("send");
+                                    }
+                                    else{
+                                        printf("List Login Info Successfully Sent\n");
+                                    }
+                                }
+                                else if(split_client_command[0] == "REFRESH"){
+
+                                }
+                                else if(split_client_command[0] == "EXIT"){
+
                                 }
                             }
                         }
@@ -200,12 +258,14 @@ int server(string port_number){
         }
         else
         {
-            printf("Server listner not in any category. Closing application...\n");
+            perror("Server listner not in any category. Closing application...\n");
+            return -1;
         }
     }
     // END
     else{
         printf("not in any category so close the server..\n");
+        return -1;
     }
     return 0;
 }

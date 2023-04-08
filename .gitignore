@@ -33,3 +33,6 @@
 
 # vscode
 *.vscode
+
+# don't include
+void.cpp

@@ -66,6 +66,8 @@ int client_initialization(string port_number){
 
 int client(string port_number){
     printf("Initialising client\n");
+
+    client_ip = set_ip();
     
     int client_initialization_status;
     fd_set client_masterfds;
@@ -87,21 +89,23 @@ int client(string port_number){
         return -1;
     }
     else if(client_initialization_status == 0){
-        printf("client is Alive\n");
+        printf("Client is Alive!\n");
         FD_SET(client_socket_fd, &client_masterfds);
         fdmax = client_socket_fd;
         string command;
         bool client_login_status = false;
 
         for(;;){
-            printf("[PA1-Client@CSE489/589]$ ");
+            printf("\n[PA1-Client@CSE489/589]$ ");
+            fflush(stdout);
+
             client_readfds = client_masterfds;
             if(!client_login_status){
-                FD_SET(STDIN, & client_readfds);
+                FD_SET(STDIN, &client_readfds);
             }
             else{
-                FD_SET(client_socket_fd, & client_readfds);
-                FD_SET(STDIN, & client_readfds);
+                FD_SET(client_socket_fd, &client_readfds);
+                FD_SET(STDIN, &client_readfds);
             }
 
             int fdmax = client_login_status ?  client_socket_fd : 0;
@@ -125,11 +129,6 @@ int client(string port_number){
                     print_log_end(command);
                 } 
                 else if (split_command[0] == "IP"){
-                    client_ip = set_ip();
-                    // if(client_ip == NULL){
-                    //     perror("Unable to set IP...");
-                    //     return -1;
-                    // }
                     print_log_success("IP");
                     cse4589_print_and_log("IP:%s\n", client_ip.c_str());
                     print_log_end("IP");
@@ -180,6 +179,21 @@ int client(string port_number){
             // Handle connecting request & listen
             if(FD_ISSET(client_socket_fd, &client_readfds)){
                 printf("Inside Client Listener\n");
+
+                char* incomming_msg;
+                memset(incomming_msg, '\0', 65535);
+                int im_recv_status = recv(client_socket_fd, incomming_msg, 65535, 0);
+
+                if(im_recv_status == 0){
+                    
+                }
+                else if(im_recv_status < 0){
+
+                }
+                else{
+                    string msgstr = incomming_msg;
+                    cout<<msgstr<<"\n"<<endl;
+                }
                 return -1;
             }
 
