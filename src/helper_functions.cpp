@@ -33,6 +33,9 @@ vector<string> split_string(string input_string, string delimiter) {
         input_string.erase(0, pos + delimiter.length());
     }
     tokens.push_back(input_string);
+    if (!tokens.empty() && tokens.back().empty()) {
+        tokens.pop_back();
+    }
     return tokens;
 }
 
@@ -56,12 +59,17 @@ void *get_in_addr(struct sockaddr *sa)
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-// printing socketlist
+// printing client_socketlist or server_socketlist
 void printSocketList(const vector<SocketObject>& socketlist) {
     cout << "Socket List:\n";
-    for (vector<SocketObject>::size_type i = 0; i < socketlist.size(); ++i) {
-        const SocketObject& socket = socketlist[i];
-        cout << socket.hostname << ", " << socket.ip << ", " << socket.port << "\n";
+    // for (vector<SocketObject>::size_type i = 0; i < socketlist.size(); ++i) {
+    //     const SocketObject& socket = socketlist[i];
+    //     cout << socket.hostname << ", " << socket.ip << ", " << socket.port << "\n";
+    // }
+
+    for (vector<SocketObject>::const_iterator it = socketlist.begin(); it != socketlist.end();it++)
+    {
+        cout << it->hostname << ", " << it->ip << ", " << it->port << "\n";
     }
 }
 

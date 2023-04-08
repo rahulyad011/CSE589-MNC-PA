@@ -10,7 +10,19 @@ struct addrinfo * server_addrinfo;
 string server_ip;
 int server_port;
 
-extern vector<SocketObject> socketlist;
+vector<SocketObject> server_socketlist;
+
+void print_server_List(){
+    sort(server_socketlist.begin(), server_socketlist.end());
+    print_log_success("LIST");
+    int i = 0;
+    for (vector<SocketObject>::iterator it = server_socketlist.begin(); it != server_socketlist.end();i++,it++)
+    {
+        if(it->status == "logged-in")
+            cse4589_print_and_log("%-5d%-35s%-20s%-8d\n", i + 1, it->hostname.c_str(), it->ip.c_str(), it->port_num);
+    }
+    print_log_end("LIST");
+}
 
 int server_initialization(string port_number){
     const char *server_port_number_pointer = port_number.c_str(); 
@@ -82,6 +94,7 @@ int server(string port_number){
     server_initialization_status = server_initialization(port_number);
     char remoteIP[INET6_ADDRSTRLEN];
     char buf[256];    // buffer for client data
+    memset(buf, '\0', sizeof(buf));
     int nbytes;
     int i, j;
 
@@ -155,7 +168,7 @@ int server(string port_number){
                                 print_log_end("PORT");
                             }
                             else if(command == "LIST"){
-                                printf("List is not implemented yet\n");
+                                print_server_List();
                             }
                         }
                         // listening from connections
@@ -207,8 +220,10 @@ int server(string port_number){
                                 //         }
                                 //     }
                                 // }
-
+                                
                                 string client_command = buf;
+                                cout<<"buf= "<<buf<<endl;
+                                memset(buf, '\0', sizeof(buf));
                                 cout<<"client_command= "<<client_command<<endl;
                                 vector<string> split_client_command = split_string(client_command, " ");
 
@@ -223,19 +238,20 @@ int server(string port_number){
                                     // New Client, Add it in Socket List
                                     else{
                                         currentSocketObject = newSocketObject(newfd, split_client_command[1], split_client_command[2], split_client_command[3]);
-                                        socketlist.push_back(*currentSocketObject);
+                                        server_socketlist.push_back(*currentSocketObject);
                                         cout<<"Client with HOSTNAME= "<< split_client_command[1]<<", IP= "<< split_client_command[2]<<", PORT= "<<split_client_command[3]<<" Logged In Successfully"<<endl;
                                     }
 
                                     // Inform the client about existing live conections
                                     string message = "LIST_LOGIN ";
-                                    for (vector<SocketObject>::iterator it = socketlist.begin(); it != socketlist.end(); ++it) {
+                                    for (vector<SocketObject>::iterator it = server_socketlist.begin(); it != server_socketlist.end(); ++it) {
                                         if (it->status == "logged-in") {
                                             message += it->hostname + " " + it->ip + " " + it->port + " ";
                                         }
-                                        message += "\n";
                                     }
-                                    
+                                    message += "\n";
+
+                                    cout<<"LIST_LOGIN message: "<<message<<endl;
 
                                     int ll_send_status = send(currentSocketObject->cfd, message.c_str(), strlen(message.c_str()), 0);
                                     if(ll_send_status <= 0){
@@ -249,7 +265,20 @@ int server(string port_number){
 
                                 }
                                 else if(split_client_command[0] == "EXIT"){
-
+                                    cout<< "server_socketlist.size() before erase = "<< server_socketlist.size() << endl;
+                                    for (vector<SocketObject>::iterator it = server_socketlist.begin(); it != server_socketlist.end();)
+                                    {
+                                        if (it->cfd == index)
+                                        {
+                                            printf("client fd found, deleteing it from the server_socketlist...\n");
+                                            it = server_socketlist.erase(it);
+                                        }
+                                        else
+                                        {
+                                            ++it;
+                                        }
+                                    }
+                                    cout<< "server_socketlist.size() after erase = "<< server_socketlist.size() << endl;
                                 }
                             }
                         }
