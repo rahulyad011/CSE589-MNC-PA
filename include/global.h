@@ -38,6 +38,7 @@ void print_log_end(string command);
 int string_to_int(string str);
 string set_ip();
 vector<string> split_string(string input_string, string delimiter);
+void print_fd_set(fd_set& set);
 
 // client.cpp functions
 int client(string port_number);

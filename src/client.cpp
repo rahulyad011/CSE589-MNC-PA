@@ -9,6 +9,7 @@ struct addrinfo client_hints;
 struct addrinfo * client_addrinfo;
 string client_ip;
 int client_port;
+char client_hostname[256];
 
 int client_initialization(string port_number){
     const char *client_port_number_pointer = port_number.c_str(); 
@@ -53,40 +54,44 @@ int client(string port_number){
     }
     else if(client_initialization_status == 0){
         printf("client is Alive\n");
-        fd_set client_readfds;
+
         string command;
+        bool client_login_status = false;
 
         for(;;){
             printf("[PA1-Client@CSE489/589]$ ");
 
-            FD_ZERO(&client_readfds);
-            fflush(stdout);
-            FD_SET(STDIN, &client_readfds);
-            select(STDIN+1, &client_readfds, NULL, NULL, NULL);
-            
-            if(FD_ISSET(STDIN, &client_readfds)){
-                // char *command = (char*) malloc(sizeof(char)*MAX_INPUT_SIZE);
-                // memset(command, '\0', MAX_INPUT_SIZE);
-                // if(fgets(command, MAX_INPUT_SIZE, stdin) == NULL){
-                //     return -1;
-                // }
-                // string command_str = command;
-                // if(command[strlen(command) - 1] == '\n')
-                // {
-                //     command_str = command_str.substr(0, command_str.length() - 1);
-                // }
-                // vector<string> split_cmd = split_string(command_str, " ");
-                // fflush(stdin);
-                getline(cin, command);
-                cout << "You entered: " << command << endl;
+            fd_set client_readfds;
+            FD_ZERO( & client_readfds);
+            if(!client_login_status){
+                FD_SET(STDIN, & client_readfds);
+            }
+            else{
+                FD_SET(client_socket_fd, & client_readfds);
+                FD_SET(STDIN, & client_readfds);
+            }
 
-                if (command == "AUTHOR"){
+            int fdmax = client_login_status ?  client_socket_fd : 0;
+            int select_status = select(fdmax+1, &client_readfds, NULL, NULL, NULL);
+
+            if(select_status == -1){
+                perror("Error in executing select()...\n");
+                return -1;
+            }
+
+            // Handle Standard Input
+            if(FD_ISSET(STDIN, &client_readfds)){
+                getline(cin, command);
+                cout << "You Entered: " << command << endl;
+                vector<string> split_command = split_string(command, " ");
+
+                if (split_command[0] == "AUTHOR"){
                     print_log_success(command);
                     string ubitname = "rahulyad";
                     cse4589_print_and_log("I, %s, have read and understood the course academic integrity policy.\n", ubitname.c_str());
                     print_log_end(command);
                 } 
-                else if (command == "IP"){
+                else if (split_command[0] == "IP"){
                     client_ip = set_ip();
                     // if(client_ip == NULL){
                     //     perror("Unable to set IP...");
@@ -96,18 +101,56 @@ int client(string port_number){
                     cse4589_print_and_log("IP:%s\n", client_ip.c_str());
                     print_log_end("IP");
                 }
-                else if (command == "PORT"){
+                else if (split_command[0] == "PORT"){
                     client_port = string_to_int(port_number);
                     print_log_success("PORT");
                     cse4589_print_and_log("PORT:%d\n", client_port);
                     print_log_end("PORT");
                 }
-                else if (command == "LIST"){
+                else if (split_command[0] == "LIST"){
                     printf("List is not implemented yet\n");
                 }
+                else if (split_command[0] == "LOGIN" && !client_login_status){
+                    cout<<"split_command[0]= "<<split_command[0]<<endl;
+                    cout<<"split_command[1]= "<<split_command[1]<<endl;
+                    cout<<"split_command[2]= "<<split_command[2]<<endl;
+                    int server_getaddrinfo_status = getaddrinfo(split_command[1].c_str(), split_command[2].c_str(), &client_hints, &client_addrinfo);
+                    if(server_getaddrinfo_status != 0){
+                        perror("Error in executing getaddrinfo_status() for server from client...\n");
+                        return -1;
+                    }
+
+                    int connect_status = connect(client_socket_fd, client_addrinfo->ai_addr, client_addrinfo->ai_addrlen);
+                    if(connect_status == -1){
+                        perror("Unable to connect()...\n");
+                        close(client_socket_fd);
+                        return -1;
+                    }
+
+                    freeaddrinfo(client_addrinfo);
+
+                    gethostname(client_hostname, sizeof(client_hostname) - 1);
+                    string message = "LOGIN " + string(client_hostname) + " " + client_ip + " " + port_number;
+                    cout<<"message prepared by client= "<<message<<endl;
+                    int send_status = send(client_socket_fd, (const char*)message.c_str(), message.length(), 0);
+                    if(send_status <= 0){
+                        perror("Unable to send() message");
+                        return -1;
+                    }
+                    cout<< send_status << endl;
+
+                    client_login_status = true;
+                    printf("LOGIN Successful!!\n");
+                }
             }
-            else
-                printf("Timed out...\n");
+
+            // Handle connecting request & listen
+            if(FD_ISSET(client_socket_fd, &client_readfds)){
+                printf("Inside Client Listener\n");
+                return -1;
+            }
+
+            fflush(stdout);
         }
     }
 

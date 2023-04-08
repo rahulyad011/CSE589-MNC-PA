@@ -35,3 +35,13 @@ vector<string> split_string(string input_string, string delimiter) {
     tokens.push_back(input_string);
     return tokens;
 }
+
+void print_fd_set(fd_set& set) {
+    std::cout << "fd_set: ";
+    for (int i = 0; i < FD_SETSIZE; i++) {
+        if (FD_ISSET(i, &set)) {
+            std::cout << i << " ";
+        }
+    }
+    std::cout << std::endl;
+}

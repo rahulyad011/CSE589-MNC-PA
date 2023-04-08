@@ -51,7 +51,7 @@ int server(string port_number){
         return -1;
     }
     else if(server_initialization_status == 0){
-        int listen_status = listen(server_socket_fd, 10);
+        int listen_status = listen(server_socket_fd, 5);
         string command;
 
         if(listen_status == -1){
@@ -60,52 +60,58 @@ int server(string port_number){
         }
         else if(listen_status == 0){
             printf("Server is Alive!\n");
-            fd_set server_readfds;
             
+            fd_set server_readfds;
+            FD_ZERO( & server_readfds);
+            FD_SET(server_socket_fd, & server_readfds);
+            FD_SET(STDIN, & server_readfds);
+            int fdmax = server_socket_fd > STDIN ? server_socket_fd : STDIN;
+
             for(;;){
                 printf("\n[PA1-Server@CSE489/589]$ ");
 
-                FD_ZERO(&server_readfds);
                 fflush(stdout);
-                FD_SET(STDIN, &server_readfds);
-                select(STDIN+1, &server_readfds, NULL, NULL, NULL);
+                int select_status = select(fdmax+1, &server_readfds, NULL, NULL, NULL);
+                if(select_status == -1){
+                    perror("Error in executing select()...\n");
+                    return -1;
+                }
 
-                if(FD_ISSET(STDIN, &server_readfds)){
-                    // char *command = (char*) malloc(sizeof(char)*MAX_INPUT_SIZE);
-                    // memset(command, '\0', MAX_INPUT_SIZE);
-                    // if(fgets(command, MAX_INPUT_SIZE, stdin) == NULL){
-                    //     return -1;
-                    // }
-                    // string command_str = command;
-                    // if(command[strlen(command) - 1] == '\n')
-                    // {
-                    //     command_str = command_str.substr(0, command_str.length() - 1);
-                    // }
-                    // vector<string> split_cmd = split_string(command_str, " ");
-                    // fflush(stdin);
-                    getline(cin, command);
-                    cout << "You entered: " << command << endl;
+                int index;
+                for(index=0; index <= fdmax; index++){
+                    if(FD_ISSET(index, &server_readfds)){
+                        // Handle Standard Input
+                        if(index == STDIN){
+                            getline(cin, command);
+                            cout << "You Entered: " << command << endl;
 
-                    if(command == "AUTHOR"){
-                        print_log_success(command);
-                        string ubitname = "rahulyad";
-                        cse4589_print_and_log("I, %s, have read and understood the course academic integrity policy.\n", ubitname.c_str());
-                        print_log_end(command);
-                    }
-                    else if(command == "IP"){
-                        server_ip = set_ip();
-                        print_log_success("IP");
-                        cse4589_print_and_log("IP:%s\n", server_ip.c_str());
-                        print_log_end("IP");
-                    }
-                    else if (command == "PORT"){
-                        server_port = string_to_int(port_number);
-                        print_log_success("PORT");
-                        cse4589_print_and_log("PORT:%d\n", server_port);
-                        print_log_end("PORT");
-                    }
-                    else if(command == "LIST"){
-                        printf("List is not implemented yet\n");
+                            if(command == "AUTHOR"){
+                                print_log_success(command);
+                                string ubitname = "rahulyad";
+                                cse4589_print_and_log("I, %s, have read and understood the course academic integrity policy.\n", ubitname.c_str());
+                                print_log_end(command);
+                            }
+                            else if(command == "IP"){
+                                server_ip = set_ip();
+                                print_log_success("IP");
+                                cse4589_print_and_log("IP:%s\n", server_ip.c_str());
+                                print_log_end("IP");
+                            }
+                            else if (command == "PORT"){
+                                server_port = string_to_int(port_number);
+                                print_log_success("PORT");
+                                cse4589_print_and_log("PORT:%d\n", server_port);
+                                print_log_end("PORT");
+                            }
+                            else if(command == "LIST"){
+                                printf("List is not implemented yet\n");
+                            }
+                        }
+                        // listening from connections
+                        else if(index == server_socket_fd){
+                            printf("Inside Server Listener\n");
+                            return -1;
+                        }
                     }
                 }
             }
