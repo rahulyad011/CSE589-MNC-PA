@@ -36,3 +36,6 @@
 
 # don't include
 void.cpp
+
+# ds store
+*.DS_Store

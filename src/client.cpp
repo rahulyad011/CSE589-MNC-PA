@@ -10,6 +10,7 @@ struct addrinfo * client_addrinfo;
 string client_ip;
 int client_port;
 char client_hostname[256];
+extern vector<SocketObject> socketlist;
 
 int client_initialization(string port_number){
     const char *client_port_number_pointer = port_number.c_str(); 
@@ -98,6 +99,8 @@ int client(string port_number){
         for(;;){
             printf("\n[PA1-Client@CSE489/589]$ ");
             fflush(stdout);
+            char *incomming_msg = (char*) malloc(sizeof(char)*MESSAGE_LEN);
+   	        memset(incomming_msg, '\0', MESSAGE_LEN);
 
             client_readfds = client_masterfds;
             if(!client_login_status){
@@ -169,8 +172,8 @@ int client(string port_number){
                         perror("Unable to send() message");
                         return -1;
                     }
-                    cout<< send_status << endl;
-
+                    cout<<"send_status: " <<send_status << endl;
+                    cout<<"updating login status of client: "<<endl;
                     client_login_status = true;
                     printf("LOGIN Successful!!\n");
                 }
@@ -180,19 +183,61 @@ int client(string port_number){
             if(FD_ISSET(client_socket_fd, &client_readfds)){
                 printf("Inside Client Listener\n");
 
-                char* incomming_msg;
-                memset(incomming_msg, '\0', 65535);
-                int im_recv_status = recv(client_socket_fd, incomming_msg, 65535, 0);
+                memset(incomming_msg, '\0', MESSAGE_LEN);
+                int im_recv_status = recv(client_socket_fd, incomming_msg, MESSAGE_LEN, 0);
 
                 if(im_recv_status == 0){
-                    
+                    close(client_socket_fd);
+                    client_socket_fd = 0;
+                    client_login_status = false;
                 }
                 else if(im_recv_status < 0){
 
                 }
                 else{
-                    string msgstr = incomming_msg;
-                    cout<<msgstr<<"\n"<<endl;
+                    string inmessage_str = incomming_msg;
+                    cout<<"message from ser_ver: "<<inmessage_str<<"\n"<<endl;
+                    // split each line sent by the ser_ver, it means the detail of each live client
+                    vector<string> master_msgs = split_string(inmessage_str, "\n");
+                    cout<<"master_msgs size:"<<master_msgs.size()<<endl;
+                    for (vector<string>::iterator master_msg = master_msgs.begin(); master_msg != master_msgs.end(); ++master_msg) {
+                        //now we need to break the each line corresponding to one live client into hostname, ip and port
+                        vector<string> msg_params = split_string(*master_msg, " ");
+                        cout<<"msg_params first element: "<<msg_params[0]<<endl;
+                        // msg_params[0] = trimString(msg_params[0]);
+                        cout<<"msg_param size:"<<msg_params.size()<<endl;
+                        if(msg_params.size() == 0 or msg_params[0] == "\n"){
+                            continue;
+                        }
+                        else{
+                            cout << "what is the function" << msg_params[0] << "\n";
+                            if (msg_params[0] == "LIST_LOGIN") {
+                                //server send the list of all logged-in
+                                cout << "recv get LIST_LOGIN\n";
+                                if (socketlist.size() != 0) socketlist.clear();
+
+                                for (vector<string>::size_type j = 1; j + 2 < msg_params.size(); j += 3) {
+                                    const string& hostname_t = msg_params[j];
+                                    const string& ip_t = msg_params[j + 1];
+                                    const string& port_t = msg_params[j + 2];
+                                    cout << hostname_t << ", " << ip_t << ", " << port_t << "\n";
+                                    cout << "socketlist size = " << socketlist.size() << "\n";
+                                    SocketObject* tmp_head = newSocketObject(-2, hostname_t, ip_t, port_t);
+                                    if (tmp_head == NULL) cout << " tmp_head == NULL !  \n";
+                                    socketlist.push_back(*tmp_head);
+                                    cout << "socketlist size = " << socketlist.size() << "\n";
+                                }
+                                cout << "printing socketlist client side = "<< endl;
+                                printSocketList(socketlist);
+                                if(!client_login_status)
+                                {
+                                    client_login_status = true;
+                                    print_log_success("LOGIN");
+                                    print_log_end("LOGIN");
+                                }
+                            }
+                        }
+                    }
                 }
                 return -1;
             }

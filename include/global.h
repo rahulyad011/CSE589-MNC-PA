@@ -23,6 +23,8 @@
 #include <sstream>
 #include <string>
 
+#define MESSAGE_LEN 65535
+
 using namespace std;
 
 #define FOR_RANGE(start, end, code_block) \
@@ -40,6 +42,7 @@ string set_ip();
 vector<string> split_string(string input_string, string delimiter);
 void print_fd_set(fd_set& set);
 void *get_in_addr(struct sockaddr *sa);
+
 
 // client.cpp
 int client(string port_number);
@@ -71,5 +74,10 @@ SocketObject* newSocketObject(int cfd, string hostname, string ip, string port);
 SocketObject* is_exist_Socket(string ip, string port);
 SocketObject* is_exist_Socket(string ip);
 SocketObject* is_exist_Socket(int cfd);
+
+
+//helper functions for sockets
+void printSocketList(const vector<SocketObject>& socketlist);
+string trimString(string& str);
 
 #endif

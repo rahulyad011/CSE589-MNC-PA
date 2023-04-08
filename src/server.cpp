@@ -233,8 +233,9 @@ int server(string port_number){
                                         if (it->status == "logged-in") {
                                             message += it->hostname + " " + it->ip + " " + it->port + " ";
                                         }
+                                        message += "\n";
                                     }
-                                    message += "\n";
+                                    
 
                                     int ll_send_status = send(currentSocketObject->cfd, message.c_str(), strlen(message.c_str()), 0);
                                     if(ll_send_status <= 0){

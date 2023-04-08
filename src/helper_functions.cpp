@@ -55,3 +55,24 @@ void *get_in_addr(struct sockaddr *sa)
 
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
+
+// printing socketlist
+void printSocketList(const vector<SocketObject>& socketlist) {
+    cout << "Socket List:\n";
+    for (vector<SocketObject>::size_type i = 0; i < socketlist.size(); ++i) {
+        const SocketObject& socket = socketlist[i];
+        cout << socket.hostname << ", " << socket.ip << ", " << socket.port << "\n";
+    }
+}
+
+string trimString(string& str) {
+    size_t first = str.find_first_not_of(' ');
+    if (string::npos != first) {
+        size_t last = str.find_last_not_of(' ');
+        str = str.substr(first, (last - first + 1));
+    }
+    else {
+        str.clear();
+    }
+    return str;
+}
