@@ -42,13 +42,11 @@ string set_ip();
 vector<string> split_string(string input_string, string delimiter);
 void print_fd_set(fd_set& set);
 void *get_in_addr(struct sockaddr *sa);
-
+bool ip_exception_check(const string& ip_addr);
+bool port_exception_check(const string& port_number);
 
 // client.cpp
 int client(string port_number);
-
-// server.cpp
-int server(string port_num);
 
 // Reference = https://github.com/tingting0711/CSE589_network_programming/blob/master/cse489589_assignment1/twang49/src/twang49_assignment1.cpp
 struct SocketObject
@@ -69,10 +67,10 @@ struct SocketObject
     }
 };
 
-// network_functions.cpp
+// server.cpp
+int server(string port_num);
 SocketObject* newSocketObject(int cfd, string hostname, string ip, string port);
 SocketObject* find_socket(int cfd, string ip);
-
 
 //helper functions for sockets
 void printSocketList(const vector<SocketObject>& socketlist);

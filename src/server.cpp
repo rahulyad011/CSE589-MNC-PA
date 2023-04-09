@@ -256,35 +256,47 @@ int server(string port_number){
 
                                 if(split_client_command[0] == "LOGIN"){
                                     string incoming_ip = split_client_command[2];
-                                    SocketObject* currentSocketObject = find_socket(-1, incoming_ip);
-                                    // Existing Client
-                                    if(currentSocketObject != NULL){
-                                        currentSocketObject->status = "logged-in";
-                                    }
-                                    // New Client, Add it in Socket List
-                                    else{
-                                        currentSocketObject = newSocketObject(newfd, split_client_command[1], split_client_command[2], split_client_command[3]);
-                                        server_socketlist.push_back(*currentSocketObject);
-                                        cout<<"Client with HOSTNAME= "<< split_client_command[1]<<", IP= "<< split_client_command[2]<<", PORT= "<<split_client_command[3]<<" Logged In Successfully"<<endl;
-                                    }
+                                    string incoming_port = split_client_command[3];
 
-                                    // Inform the client about existing live conections
-                                    string message = "LIST_LOGIN ";
-                                    for (vector<SocketObject>::iterator it = server_socketlist.begin(); it != server_socketlist.end(); ++it) {
-                                        if (it->status == "logged-in") {
-                                            message += it->hostname + " " + it->ip + " " + it->port + " ";
+                                    bool ip_authenticity = ip_exception_check(incoming_ip);
+                                    bool port_authenticity = port_exception_check(incoming_port);
+                                    bool command_length_authenticity = split_client_command.size() == 3;
+
+                                    if(ip_authenticity && port_authenticity && command_length_authenticity){
+                                        SocketObject* currentSocketObject = find_socket(-1, incoming_ip);
+                                        // Existing Client
+                                        if(currentSocketObject != NULL){
+                                            currentSocketObject->status = "logged-in";
+                                        }
+                                        // New Client, Add it in Socket List
+                                        else{
+                                            currentSocketObject = newSocketObject(newfd, split_client_command[1], split_client_command[2], split_client_command[3]);
+                                            server_socketlist.push_back(*currentSocketObject);
+                                            cout<<"Client with HOSTNAME= "<< split_client_command[1]<<", IP= "<< split_client_command[2]<<", PORT= "<<split_client_command[3]<<" Logged In Successfully"<<endl;
+                                        }
+
+                                        // Inform the client about existing live conections
+                                        string message = "LIST_LOGIN ";
+                                        for (vector<SocketObject>::iterator it = server_socketlist.begin(); it != server_socketlist.end(); ++it) {
+                                            if (it->status == "logged-in") {
+                                                message += it->hostname + " " + it->ip + " " + it->port + " ";
+                                            }
+                                        }
+                                        message += "\n";
+
+                                        cout<<"LIST_LOGIN message: "<<message<<endl;
+
+                                        int ll_send_status = send(currentSocketObject->cfd, message.c_str(), strlen(message.c_str()), 0);
+                                        if(ll_send_status <= 0){
+                                            perror("send");
+                                        }
+                                        else{
+                                            printf("List Login Info Successfully Sent\n");
                                         }
                                     }
-                                    message += "\n";
-
-                                    cout<<"LIST_LOGIN message: "<<message<<endl;
-
-                                    int ll_send_status = send(currentSocketObject->cfd, message.c_str(), strlen(message.c_str()), 0);
-                                    if(ll_send_status <= 0){
-                                        perror("send");
-                                    }
+                                    // Invalid IP or Port
                                     else{
-                                        printf("List Login Info Successfully Sent\n");
+                                        perror("login_exception found...\n");
                                     }
                                 }
                                 else if(split_client_command[0] == "REFRESH"){

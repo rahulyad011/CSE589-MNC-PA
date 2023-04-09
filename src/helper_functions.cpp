@@ -84,3 +84,42 @@ string trimString(string& str) {
     }
     return str;
 }
+bool ip_exception_check(const string& ip_addr) {
+    int num_dots = 0;
+    int num = 0;
+
+    for (int i = 0; i < ip_addr.length(); i++) {
+        char c = ip_addr[i];
+        if (c == '.') {
+            if (++num_dots > 3 || num > 255) {
+                return false; // too many dots or number out of range
+            }
+            num = 0;
+        } else if (!isdigit(c)) {
+            return false; // non-digit character in the IP address
+        } else {
+            num = num * 10 + (c - '0');
+        }
+    }
+
+    if (num_dots != 3 || num > 255) {
+        return false; // not enough dots or last number out of range
+    }
+
+    return true;
+}
+
+bool port_exception_check(const string& port_number) {
+    if (port_number.empty()) {
+        return false;
+    }
+
+    for (int i = 0; i < port_number.length(); i++) {
+        if (!isdigit(port_number[i])) {
+            return false;
+        }
+    }
+
+    int port = string_to_int(port_number);
+    return (port >= 1024 && port <= 49151);
+}
