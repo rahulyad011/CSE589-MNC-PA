@@ -10,19 +10,43 @@ struct addrinfo * server_addrinfo;
 string server_ip;
 int server_port;
 
-// Reference: https://github.com/tingting0711/CSE589_network_programming/blob/master/cse489589_assignment1/twang49/src/twang49_assignment1.cpp
+class localClass{
+    public:
+        int cfd;
+        int port_num;
+        int num_msg_sent;
+        int num_msg_rcv;
+        string status;
+        string ip;
+        string port;
+        string hostname;
+        vector<string> blockeduser;
+        vector<string> msgbuffer;
+        localClass(int cfd, string hostname, string ip, string port){
+            this->cfd = cfd;
+            this->ip = ip;
+            this->port = port;
+            status = "logged-in";
+            this->hostname = hostname;
+            port_num = string_to_int(port);
+            num_msg_sent = 0;
+            num_msg_rcv = 0;
+        }
+};
 
 SocketObject* newSocketObject(int cfd, string hostname, string ip, string port) 
 {
     SocketObject* hd = new SocketObject;
-    hd->cfd = cfd;
-    hd->port_num = string_to_int(port);
-    hd->num_msg_sent = 0;
-    hd->num_msg_rcv = 0;
-    hd->ip = ip;
-    hd->port = port;
-    hd->status = "logged-in";
-    hd->hostname = hostname;
+    localClass* lc = new localClass(cfd, hostname, ip, port);
+    hd->cfd = lc->cfd;
+    hd->ip = lc->ip;
+    hd->port = lc->port;
+    hd->status = lc->status;
+    hd->hostname = lc->hostname;
+    hd->port_num = lc->port_num;
+    hd->num_msg_sent = lc->num_msg_sent;
+    hd->num_msg_rcv = lc->num_msg_rcv;
+    delete lc;
     return hd;
 }
 
@@ -250,13 +274,13 @@ int server(string port_number){
                                 
                                 string client_command = buf;
                                 cout<<"buf= "<<buf<<endl;
+                                vector<string> split_client_command;
+                                split_client_command = split_string(client_command, " ");
                                 memset(buf, '\0', sizeof(buf));
                                 cout<<"client_command= "<<client_command<<endl;
-                                vector<string> split_client_command = split_string(client_command, " ");
 
                                 if(split_client_command[0] == "LOGIN"){
-                                    string incoming_ip = split_client_command[2];
-                                    SocketObject* currentSocketObject = find_socket(-1, incoming_ip);
+                                    SocketObject* currentSocketObject = find_socket(-1, split_client_command[2]);
                                     // Existing Client
                                     if(currentSocketObject != NULL){
                                         currentSocketObject->status = "logged-in";

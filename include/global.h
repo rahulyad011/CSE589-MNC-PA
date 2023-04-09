@@ -49,21 +49,20 @@ bool port_exception_check(const string& port_number);
 // client.cpp
 int client(string port_number);
 
-// Reference = https://github.com/tingting0711/CSE589_network_programming/blob/master/cse489589_assignment1/twang49/src/twang49_assignment1.cpp
-struct SocketObject
-{
+class SocketObject {
+public:
     int cfd;
     int port_num;
     int num_msg_sent;
     int num_msg_rcv;
-    string status; 
-    string ip;
-    string port;
-    string hostname;
-    vector<string> blockeduser;
-    vector<string> msgbuffer;
-    bool operator<(const SocketObject &abc) const 
-    {
+    std::string status;
+    std::string ip;
+    std::string port;
+    std::string hostname;
+    std::vector<std::string> blockeduser;
+    std::vector<std::string> msgbuffer;
+
+    bool operator<(const SocketObject &abc) const {
         return string_to_int(port) < string_to_int(abc.port);
     }
 };
