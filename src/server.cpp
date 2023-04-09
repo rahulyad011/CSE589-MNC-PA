@@ -83,6 +83,17 @@ void print_server_List(){
     print_log_end("LIST");
 }
 
+void print_server_Statistics(){
+    sort(server_socketlist.begin(), server_socketlist.end());
+    print_log_success("STATISTICS");
+    int i = 0;
+    for (vector<SocketObject>::iterator it = server_socketlist.begin(); it != server_socketlist.end();i++,it++)
+    {
+        cse4589_print_and_log("%-5d%-35s%-8d%-8d%-8s\n", i + 1, it->hostname.c_str(), it->num_msg_sent, it->num_msg_rcv, it->status.c_str());
+    }
+    print_log_end("STATISTICS");
+}
+
 SocketObject* find_socket(int cfd, string ip) 
 {
     vector<SocketObject>::iterator it;
@@ -240,6 +251,9 @@ int server(string port_number){
                             else if(command == "LIST"){
                                 print_server_List();
                             }
+                            else if(command == "STATISTICS"){
+                                print_server_Statistics();
+                            }
                         }
                         // listening from connections
                         else if(index == server_socket_fd){
@@ -328,6 +342,19 @@ int server(string port_number){
                                     }
                                     else{
                                         printf("List Login Info Successfully Sent\n");
+                                    }
+                                }
+                                else if(split_client_command[0] == "LOGOUT"){
+                                    string incoming_ip = split_client_command[1];
+                                    printf("logout requested by client ip:%s \n", incoming_ip.c_str());
+                                    SocketObject* currentSocketObject = find_socket(-1, incoming_ip);
+                                    if(currentSocketObject == NULL){
+                                        printf("client fd not found on this IP \n");
+                                        return -1;
+                                    }
+                                    else{
+                                        currentSocketObject->status = "logged-out";
+                                        printf("Client set to Logout succesful by server...\n");
                                     }
                                 }
                                 else if(split_client_command[0] == "REFRESH"){

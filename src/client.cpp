@@ -158,6 +158,28 @@ int client(string port_number){
                 else if (split_command[0] == "LIST" && client_login_status){
                     print_client_List();
                 }
+                else if (split_command[0] == "LOGOUT" && client_login_status){
+                    printf("LOGOUT is selected by the client\n");
+                    string message = "LOGOUT " + client_ip + " " + port_number;
+                    int send_status = send(client_socket_fd, (const char*)message.c_str(), message.length(), 0);
+
+                    printf("Initiating Client Logout...\n");
+
+                    if(send_status < 0)
+                    {
+                        // client_login_status = false;
+                        print_log_error("LOGOUT");
+                        perror("Error in sending the Logout message to server\n");
+                    } 
+                    else
+                    {
+                        client_login_status = false;
+                        print_log_success("LOGOUT");
+                        print_log_end("LOGOUT");
+                        
+                        client_socketlist.clear();
+                    }
+                }
                 else if (split_command[0] == "LOGIN" && !client_login_status){
                     cout<<"split_command[0]= "<<split_command[0]<<endl;
                     cout<<"split_command[1]= "<<split_command[1]<<endl;
@@ -171,20 +193,22 @@ int client(string port_number){
                     bool command_length_authenticity = split_command.size() == 3;
 
                     if(ip_authenticity && port_authenticity && command_length_authenticity){
-                        int client_getaddrinfo_status = getaddrinfo(split_command[1].c_str(), split_command[2].c_str(), &client_hints, &client_addrinfo);
-                        if(client_getaddrinfo_status != 0){
-                            perror("Error in executing client_getaddrinfo_status() for client from client...\n");
-                            return -1;
-                        }
+                        if(!client_login_status_local){
+                            int client_getaddrinfo_status = getaddrinfo(split_command[1].c_str(), split_command[2].c_str(), &client_hints, &client_addrinfo);
+                            if(client_getaddrinfo_status != 0){
+                                perror("Error in executing client_getaddrinfo_status() for client from client...\n");
+                                return -1;
+                            }
 
-                        int connect_status = connect(client_socket_fd, client_addrinfo->ai_addr, client_addrinfo->ai_addrlen);
-                        if(connect_status == -1){
-                            perror("Unable to connect()...\n");
-                            close(client_socket_fd);
-                            return -1;
-                        }
+                            int connect_status = connect(client_socket_fd, client_addrinfo->ai_addr, client_addrinfo->ai_addrlen);
+                            if(connect_status == -1){
+                                perror("Unable to connect()...\n");
+                                close(client_socket_fd);
+                                return -1;
+                            }
 
-                        freeaddrinfo(client_addrinfo);
+                            freeaddrinfo(client_addrinfo);
+                        }
 
                         gethostname(client_hostname, sizeof(client_hostname) - 1);
                         string message = "LOGIN " + string(client_hostname) + " " + client_ip + " " + port_number;
@@ -197,7 +221,7 @@ int client(string port_number){
                         cout<<"send_status: " <<send_status << endl;
                         cout<<"updating login status of client: "<<endl;
                         client_login_status_local = true;
-                        printf("LOGIN Successful!!\n");
+                        printf("Client Attempted to LogIn...\n");
                     }
                     else{
                         print_log_error(split_command[0]);

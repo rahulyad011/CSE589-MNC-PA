@@ -49,7 +49,8 @@ void print_fd_set(fd_set& set) {
     std::cout << std::endl;
 }
 
-// get sockaddr, IPv4 or IPv6:
+// get sockaddr, IPv4 or IPv6: 
+// Reference: https://beej.us/guide/bgnet/html/split-wide/client-server-background.html#a-simple-stream-server
 void *get_in_addr(struct sockaddr *sa)
 {
     if (sa->sa_family == AF_INET) {

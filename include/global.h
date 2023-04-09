@@ -43,9 +43,9 @@ int string_to_int(string str);
 string set_ip();
 vector<string> split_string(string input_string, string delimiter);
 void print_fd_set(fd_set& set);
-void *get_in_addr(struct sockaddr *sa);
 bool ip_exception_check(const string& ip_addr);
 bool port_exception_check(const string& port_number);
+void *get_in_addr(struct sockaddr *sa);
 
 // client.cpp
 int client(string port_number);
