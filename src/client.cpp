@@ -12,6 +12,17 @@ int client_port;
 char client_hostname[256];
 vector<SocketObject> client_socketlist;
 
+SocketObject* client_find_socket(int cfd, string ip) 
+{
+    vector<SocketObject>::iterator it;
+    for (it = client_socketlist.begin(); it != client_socketlist.end(); ++it) {
+        if ((cfd != -1 && it->cfd == cfd) || (ip != "" && it->ip == ip)) {
+            return &(*it);
+        }
+    }
+    return NULL;
+}
+
 void print_client_List(){
     sort(client_socketlist.begin(), client_socketlist.end());
     print_log_success("LIST");
@@ -185,32 +196,30 @@ int client(string port_number){
                     string destination_ip = split_command[1];
                     
                     if(ip_exception_check(destination_ip)){
-                        // if(find_socket(-1, destination_ip) != NULL){
+                        if(client_find_socket(-1, destination_ip) != NULL){
+                            string message = "SEND " + client_ip + " " + destination_ip;
 
-                        string message = "SEND " + client_ip + " " + destination_ip;
+                            vector<string>::iterator it = split_command.begin();
+                            it++; // Skip "SEND" word
+                            it++; // Skip <IP>
+                            for (; it != split_command.end();it++)
+                            {
+                                message += " " + *it;
+                            }
 
-                        vector<string>::iterator it = split_command.begin();
-                        it++; // Skip "SEND" word
-                        it++; // Skip <IP>
-                        for (; it != split_command.end();it++)
-                        {
-                            message += " " + *it;
-                        }
-
-                        int send_status = send(client_socket_fd, (const char*)message.c_str(), message.length(), 0);
-                        if(send_status < 0){
-                            printf("Unable to execute send() for SEND command from client...\n");
+                            int send_status = send(client_socket_fd, (const char*)message.c_str(), message.length(), 0);
+                            if(send_status < 0){
+                                printf("Unable to execute send() for SEND command from client...\n");
+                            }
+                            else{
+                                print_log_success("SEND");
+                                print_log_end("SEND");
+                            }       
                         }
                         else{
-                            print_log_success("SEND");
-                            print_log_end("SEND");
-                        }    
-                                               
-                        // }
-                        // else{
-                        //     print_log_error("SEND");
-                        //     cout<<"Socket Not Found with the provided destination_ip: "<< destination_ip << endl;
-                        // }
+                            print_log_error("SEND");
+                            cout<<"Socket Not Found with the provided destination_ip: "<< destination_ip << endl;
+                        }
                     }
                     else{
                         print_log_error("SEND");
