@@ -3,13 +3,16 @@
 
 void print_log_success(string command)
 {
-
     cse4589_print_and_log("[%s:SUCCESS]\n", command.c_str());
 }
 
 void print_log_end(string command)
 {
-
     cse4589_print_and_log("[%s:END]\n", command.c_str());
-    // printf("\n");
+}
+
+void print_log_error(string command)
+{
+    cse4589_print_and_log("[%s:ERROR]\n", command.c_str());
+    print_log_end(command);
 }

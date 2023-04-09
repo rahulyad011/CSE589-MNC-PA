@@ -35,6 +35,7 @@ for (int i = (start); i < (end); i++) { \
 // print_functions.cpp
 void print_log_success(string command);
 void print_log_end(string command);
+void print_log_error(string command);
 
 //helper_functions.cpp
 int string_to_int(string str);
