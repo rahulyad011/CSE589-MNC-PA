@@ -22,6 +22,7 @@
 #include <algorithm> 
 #include <sstream>
 #include <string>
+#include <map>
 
 #define MESSAGE_LEN 65535
 

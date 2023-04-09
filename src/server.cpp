@@ -12,27 +12,46 @@ int server_port;
 
 class localClass{
     public:
+        map<string, int> command_map;
         int cfd;
         int port_num;
+        int total_connections;
         int num_msg_sent;
         int num_msg_rcv;
+        vector<string> commands;
         string status;
         string ip;
+        map<string, int>::iterator it;
         string port;
+        bool flag;
         string hostname;
         vector<string> blockeduser;
         vector<string> msgbuffer;
-        localClass(int cfd, string hostname, string ip, string port){
-            this->cfd = cfd;
-            this->ip = ip;
-            this->port = port;
-            status = "logged-in";
-            this->hostname = hostname;
-            port_num = string_to_int(port);
-            num_msg_sent = 0;
-            num_msg_rcv = 0;
-        }
+        localClass(int cfd, string hostname, string ip, string port);
 };
+
+localClass::localClass(int cfd, string hostname, string ip, string port){
+    this->cfd = cfd;
+    this->ip = ip;
+    this->port = port;
+    status = "logged-in";
+    this->hostname = hostname;
+    port_num = string_to_int(port);
+    num_msg_sent = 0;
+    num_msg_rcv = 0;
+
+    command_map.insert(pair<string, int>("AUTHOR", 1));
+    command_map.insert(pair<string, int>("IP", 2));
+    command_map.insert(pair<string, int>("PORT", 3));
+    command_map.insert(pair<string, int>("LIST", 4));
+    command_map.insert(pair<string, int>("REFRESH", 5));
+    command_map.insert(pair<string, int>("EXIT", 6));
+    command_map.insert(pair<string, int>("LOGIN", 7));
+
+    for (it = command_map.begin(); it != command_map.end(); it++) {
+        commands.push_back(it->first);
+    }
+}
 
 SocketObject* newSocketObject(int cfd, string hostname, string ip, string port) 
 {
