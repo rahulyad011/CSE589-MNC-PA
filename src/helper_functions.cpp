@@ -124,3 +124,14 @@ bool port_exception_check(const string& port_number) {
     int port = string_to_int(port_number);
     return (port >= 1024 && port <= 49151);
 }
+
+bool check_blocked(vector<string> blocked_ip_list, string ip){
+    vector<string> ::iterator it;
+    for(; it != blocked_ip_list.end(); it++){
+        if(*it == ip){
+            return true;
+        }
+    }
+
+    return false;
+}

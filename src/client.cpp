@@ -180,6 +180,43 @@ int client(string port_number){
                         client_socketlist.clear();
                     }
                 }
+                else if (split_command[0] == "SEND" && client_login_status){
+                    printf("SEND is selected by the client\n");
+                    string destination_ip = split_command[1];
+                    
+                    if(ip_exception_check(destination_ip)){
+                        // if(find_socket(-1, destination_ip) != NULL){
+
+                        string message = "SEND " + client_ip + " " + destination_ip;
+
+                        vector<string>::iterator it = split_command.begin();
+                        it++; // Skip "SEND" word
+                        it++; // Skip <IP>
+                        for (; it != split_command.end();it++)
+                        {
+                            message += " " + *it;
+                        }
+
+                        int send_status = send(client_socket_fd, (const char*)message.c_str(), message.length(), 0);
+                        if(send_status < 0){
+                            printf("Unable to execute send() for SEND command from client...\n");
+                        }
+                        else{
+                            print_log_success("SEND");
+                            print_log_end("SEND");
+                        }    
+                                               
+                        // }
+                        // else{
+                        //     print_log_error("SEND");
+                        //     cout<<"Socket Not Found with the provided destination_ip: "<< destination_ip << endl;
+                        // }
+                    }
+                    else{
+                        print_log_error("SEND");
+                        perror("Invalid IP...\n");
+                    }
+                }
                 else if (split_command[0] == "LOGIN" && !client_login_status){
                     cout<<"split_command[0]= "<<split_command[0]<<endl;
                     cout<<"split_command[1]= "<<split_command[1]<<endl;
@@ -327,8 +364,22 @@ int client(string port_number){
                                     print_log_end("LOGIN");
                                 }
                             }
-                            else{
+                            else if (msg_params[0] == "SEND"){
+                                vector<string>::iterator it = msg_params.begin();
+                                it++; // Skip "SEND" word
+                                it++; // Skip <source IP>
+                                it++; // Skip <destination IP>
 
+                                string message = "" + *it;
+                                it++;
+                                for (; it != msg_params.end();it++)
+                                {
+                                    message += " " + *it;
+                                }
+
+                                print_log_success("RECEIVED");
+                                cse4589_print_and_log("msg from:%s\n[msg]:%s\n", msg_params[1].c_str(), message.c_str());
+                                print_log_end("RECEIVED");
                             }
                         }
                     }

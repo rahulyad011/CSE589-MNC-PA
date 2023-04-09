@@ -76,5 +76,6 @@ SocketObject* find_socket(int cfd, string ip);
 //helper functions for sockets
 void printSocketList(const vector<SocketObject>& socketlist);
 string trimString(string& str);
+bool check_blocked(vector<string> blocked_ip_list, string ip);
 
 #endif

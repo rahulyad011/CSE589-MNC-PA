@@ -53,6 +53,11 @@ localClass::localClass(int cfd, string hostname, string ip, string port){
     }
 }
 
+void update_msg_statistics(SocketObject* source_sc, SocketObject* destination_sc){
+    destination_sc->num_msg_rcv = destination_sc->num_msg_rcv + 1;
+    source_sc->num_msg_sent = source_sc->num_msg_sent + 1;
+}
+
 SocketObject* newSocketObject(int cfd, string hostname, string ip, string port) 
 {
     SocketObject* hd = new SocketObject;
@@ -255,7 +260,7 @@ int server(string port_number){
                                 print_server_Statistics();
                             }
                         }
-                        // listening from connections
+                        // listening from new connections
                         else if(index == server_socket_fd){
                             printf("Inside Server Listener\n");
                             addrlen = sizeof remoteaddr;
@@ -275,6 +280,7 @@ int server(string port_number){
 
                             // return -1;
                         } 
+                        // listening from existing connections
                         else
                         {
                             // handle data from a client
@@ -290,21 +296,7 @@ int server(string port_number){
                                 FD_CLR(index, &server_masterfds); // remove from master set
                             } 
                             else 
-                            {
-                                // // we got some data from a client
-                                // for(j = 0; j <= fdmax; j++) {
-                                //     // send to everyone!
-                                //     if (FD_ISSET(j, &server_masterfds)) {
-                                //         // except the listener and ourselves
-                                //         if (j != server_socket_fd && j != index) {
-                                //             if (send(j, buf, nbytes, 0) == -1) {
-                                //                 perror("send");
-                                //                 printf("send error");
-                                //             }
-                                //         }
-                                //     }
-                                // }
-                                
+                            {   
                                 string client_command = buf;
                                 cout<<"buf= "<<buf<<endl;
                                 vector<string> split_client_command;
@@ -387,6 +379,62 @@ int server(string port_number){
                                         cout<< "server_socketlist.size() after refresh = "<< server_socketlist.size() << endl;                
                                     }
                                     
+                                }
+                                else if(split_client_command[0] == "SEND"){
+                                    string source_ip = split_client_command[1];
+                                    string destination_ip = split_client_command[2];
+
+                                    printf("send requested by source_ip:%s \n", source_ip.c_str());
+                                    printf("send requested to destination_ip:%s \n", destination_ip.c_str());
+
+                                    SocketObject* source_SocketObject = find_socket(-1, source_ip);
+                                    SocketObject* destination_SocketObject = find_socket(-1, destination_ip);
+
+                                    if(source_SocketObject == NULL){
+                                        printf("source_SocketObject not found on this IP \n");
+                                        continue;
+                                    }
+                                    if(destination_SocketObject == NULL){
+                                        printf("destination_SocketObject not found on this IP \n");
+                                        continue;
+                                    }
+
+                                    if(check_blocked(destination_SocketObject->blockeduser, source_ip)){
+                                        cout<<"source_ip: "<<source_ip << " blocked by destination_ip: "<<destination_ip<<endl;
+                                        continue;
+                                    }
+
+                                    update_msg_statistics(source_SocketObject, destination_SocketObject);
+
+                                    vector<string>::iterator it = split_client_command.begin();
+                                    it++; // Skip "SEND" word
+                                    it++; // Skip <source IP>
+                                    it++; // Skip <destination IP>
+
+                                    string message = "SEND " + source_ip + " " + destination_ip + " " +  *it;
+                                    it++;
+                                    for (; it != split_client_command.end();it++)
+                                    {
+                                        message += " " + *it;
+                                    }
+
+                                    // check if logged in
+                                    if(destination_SocketObject->status == "logged-in")
+                                    {
+                                        int send_status = send(destination_SocketObject->cfd, (const char*)message.c_str(),message.length(), 0);
+                                        if(send_status < 0){
+                                            perror("Unable to send() to logged-in client..\n");
+                                        }
+                                        else{
+                                            print_log_success("RELAYED");
+                                            cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n", source_ip.c_str(), destination_ip.c_str(), message.c_str());
+                                            print_log_end("RELAYED");
+                                        }
+                                    }else{
+                                        // if not logged-in, then buffer the message
+                                        destination_SocketObject->msgbuffer.push_back(message);
+                                        printf("Message pushed into respective buffer for logged out client\n");
+                                    }
                                 }
                                 else if(split_client_command[0] == "EXIT"){
                                     cout<< "server_socketlist.size() before erase = "<< server_socketlist.size() << endl;
