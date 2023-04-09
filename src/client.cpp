@@ -191,7 +191,21 @@ int client(string port_number){
                     printf("LOGIN Successful!!\n");
                 }
                 else if (split_command[0] == "REFRESH" && client_login_status){
-                    printf("REFRESH is not implemented yet\n");
+                    printf("REFRESH is selected by the client\n");
+                    string message = "REFRESH " + client_ip + " " + port_number;
+                    int send_status = send(client_socket_fd, (const char*)message.c_str(), message.length(), 0);
+
+                    printf("Initiating Client Refresh...\n");
+
+                    if(send_status < 0)
+                    {
+                        perror("Error in sending the Refresh message to server\n");
+                    } 
+                    else
+                    {
+                        print_log_success("REFRESH");
+                        print_log_end("REFRESH");
+                    }
                 }
                 else if (split_command[0] == "EXIT"){
                     string message = "EXIT " + client_ip + " " + port_number;
@@ -223,12 +237,14 @@ int client(string port_number){
                 int im_recv_status = recv(client_socket_fd, incomming_msg, MESSAGE_LEN, 0);
 
                 if(im_recv_status == 0){
+                    printf("Not Receiving anything Inside Client Listener so closing connection \n");
                     close(client_socket_fd);
                     client_socket_fd = 0;
                     client_login_status = false;
                 }
                 else if(im_recv_status < 0){
-
+                    perror("receive");
+                    printf("error in receiving \n");
                 }
                 else{
                     string inmessage_str = incomming_msg;

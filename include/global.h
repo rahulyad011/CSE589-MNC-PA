@@ -71,9 +71,7 @@ struct SocketObject
 
 // network_functions.cpp
 SocketObject* newSocketObject(int cfd, string hostname, string ip, string port);
-SocketObject* is_exist_Socket(string ip, string port);
-SocketObject* is_exist_Socket(string ip);
-SocketObject* is_exist_Socket(int cfd);
+SocketObject* find_socket(int cfd, string ip);
 
 
 //helper functions for sockets

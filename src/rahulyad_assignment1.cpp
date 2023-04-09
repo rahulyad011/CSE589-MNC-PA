@@ -1,6 +1,6 @@
 /**
- * @kchand_assignment1
- * @author  Kunal Chand <kchand@buffalo.edu>
+ * @rahulyad_assignment1
+ * @author  Rahul Yadav <rahulyad@buffalo.edu>
  * @version 1.0
  *
  * @section LICENSE

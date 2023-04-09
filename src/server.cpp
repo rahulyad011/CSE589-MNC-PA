@@ -10,6 +10,22 @@ struct addrinfo * server_addrinfo;
 string server_ip;
 int server_port;
 
+// Reference: https://github.com/tingting0711/CSE589_network_programming/blob/master/cse489589_assignment1/twang49/src/twang49_assignment1.cpp
+
+SocketObject* newSocketObject(int cfd, string hostname, string ip, string port) 
+{
+    SocketObject* hd = new SocketObject;
+    hd->cfd = cfd;
+    hd->port_num = string_to_int(port);
+    hd->num_msg_sent = 0;
+    hd->num_msg_rcv = 0;
+    hd->ip = ip;
+    hd->port = port;
+    hd->status = "logged-in";
+    hd->hostname = hostname;
+    return hd;
+}
+
 vector<SocketObject> server_socketlist;
 
 void print_server_List(){
@@ -22,6 +38,17 @@ void print_server_List(){
             cse4589_print_and_log("%-5d%-35s%-20s%-8d\n", i + 1, it->hostname.c_str(), it->ip.c_str(), it->port_num);
     }
     print_log_end("LIST");
+}
+
+SocketObject* find_socket(int cfd, string ip) 
+{
+    vector<SocketObject>::iterator it;
+    for (it = server_socketlist.begin(); it != server_socketlist.end(); ++it) {
+        if ((cfd != -1 && it->cfd == cfd) || (ip != "" && it->ip == ip)) {
+            return &(*it);
+        }
+    }
+    return NULL;
 }
 
 int server_initialization(string port_number){
@@ -228,9 +255,8 @@ int server(string port_number){
                                 vector<string> split_client_command = split_string(client_command, " ");
 
                                 if(split_client_command[0] == "LOGIN"){
-                                    string incomming_ip = split_client_command[2];
-                                    SocketObject* currentSocketObject = is_exist_Socket(incomming_ip);
-
+                                    string incoming_ip = split_client_command[2];
+                                    SocketObject* currentSocketObject = find_socket(-1, incoming_ip);
                                     // Existing Client
                                     if(currentSocketObject != NULL){
                                         currentSocketObject->status = "logged-in";
@@ -262,7 +288,35 @@ int server(string port_number){
                                     }
                                 }
                                 else if(split_client_command[0] == "REFRESH"){
+                                    string incoming_ip = split_client_command[1];
+                                    printf("refresh requested by client ip:%s \n", incoming_ip.c_str());
+                                    SocketObject* currentSocketObject = find_socket(-1, incoming_ip);
+                                    if(currentSocketObject == NULL){
+                                        printf("client fd not found on this IP \n");
+                                        return -1;
+                                    }
+                                    else{
+                                        // Inform the client about existing live conections
+                                        string message = "LIST_LOGIN ";
+                                        for (vector<SocketObject>::iterator it = server_socketlist.begin(); it != server_socketlist.end(); ++it) {
+                                            if (it->status == "logged-in") {
+                                                message += it->hostname + " " + it->ip + " " + it->port + " ";
+                                            }
+                                        }
+                                        message += "\n";
 
+                                        cout<<"LIST_LOGIN from REFRESH message: "<<message<<endl;
+
+                                        int ll_send_status = send(currentSocketObject->cfd, message.c_str(), strlen(message.c_str()), 0);
+                                        if(ll_send_status <= 0){
+                                            perror("send");
+                                        }
+                                        else{
+                                            printf("Refreshed List Login Info Successfully Sent\n");
+                                        }
+                                        cout<< "server_socketlist.size() after refresh = "<< server_socketlist.size() << endl;                
+                                    }
+                                    
                                 }
                                 else if(split_client_command[0] == "EXIT"){
                                     cout<< "server_socketlist.size() before erase = "<< server_socketlist.size() << endl;
