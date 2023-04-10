@@ -226,6 +226,98 @@ int client(string port_number){
                         perror("Invalid IP...\n");
                     }
                 }
+                else if (split_command[0] == "BLOCK" && client_login_status){
+                    printf("BLOCK is selected by the client\n");
+                    string destination_ip = split_command[1];
+                    
+                    if(ip_exception_check(destination_ip)){
+                        if(client_find_socket(-1, destination_ip) != NULL){
+                            SocketObject *current_client_object = client_find_socket(-1, client_ip);
+
+                            vector<string>::iterator it = current_client_object->blockeduser.begin();
+
+                            while(it != current_client_object->blockeduser.end()){
+                                if(*it == destination_ip) break;
+                                it++;
+                            }
+
+                            if(it != current_client_object->blockeduser.end()){
+                                print_log_error("BLOCK");
+                                printf("User already blocked...\n");
+                                continue;
+                            }
+
+                            string message = "BLOCK " + client_ip + " " + destination_ip;
+                            int send_status = send(client_socket_fd, (const char*)message.c_str(), message.length(), 0);
+                            if(send_status < 0)
+                            {
+                                print_log_error("BLOCK");
+                                printf("Unable to execute send() for BLOCK command from client...\n");
+                            }
+                            else {
+                                current_client_object->blockeduser.push_back(destination_ip);
+                                print_log_success("BLOCK");
+                                print_log_end("BLOCK");
+                            }
+                        }
+                        else{
+                            print_log_error("BLOCK");
+                            cout<<"Socket Not Found with the provided destination_ip: "<< destination_ip << endl;
+                            continue;
+                        }
+                    }
+                    else{
+                        print_log_error("BLOCK");
+                        perror("Invalid IP...\n");
+                        continue;
+                    }
+                }
+                else if (split_command[0] == "UNBLOCK" && client_login_status){
+                    printf("UNBLOCK is selected by the client\n");
+                    string destination_ip = split_command[1];
+                    
+                    if(ip_exception_check(destination_ip)){
+                        if(client_find_socket(-1, destination_ip) != NULL){
+                            SocketObject *current_client_object = client_find_socket(-1, client_ip);
+
+                            vector<string>::iterator it = current_client_object->blockeduser.begin();
+
+                            while(it != current_client_object->blockeduser.end()){
+                                if(*it == destination_ip) break;
+                                it++;
+                            }
+
+                            if(it == current_client_object->blockeduser.end()){
+                                print_log_error("UNBLOCK");
+                                printf("requested client is not present in the blocked list...\n");
+                                continue;
+                            }
+
+                            string message = "UNBLOCK " + client_ip + " " + destination_ip;
+                            int send_status = send(client_socket_fd, (const char*)message.c_str(), message.length(), 0);
+                            if(send_status < 0)
+                            {
+                                print_log_error("UNBLOCK");
+                                printf("Unable to execute send() for UNBLOCK command from client...\n");
+                            }
+                            else {
+                                current_client_object->blockeduser.erase(it);
+                                print_log_success("UNBLOCK");
+                                print_log_end("UNBLOCK");
+                            }
+                        }
+                        else{
+                            print_log_error("UNBLOCK");
+                            cout<<"Socket Not Found with the provided destination_ip: "<< destination_ip << endl;
+                            continue;
+                        }
+                    }
+                    else{
+                        print_log_error("UNBLOCK");
+                        perror("Invalid IP...\n");
+                        continue;
+                    }
+                }
                 else if (split_command[0] == "LOGIN" && !client_login_status){
                     cout<<"split_command[0]= "<<split_command[0]<<endl;
                     cout<<"split_command[1]= "<<split_command[1]<<endl;

@@ -58,6 +58,8 @@ void update_msg_statistics(SocketObject* source_sc, SocketObject* destination_sc
     source_sc->num_msg_sent = source_sc->num_msg_sent + 1;
 }
 
+vector<SocketObject> server_socketlist;
+
 SocketObject* newSocketObject(int cfd, string hostname, string ip, string port) 
 {
     SocketObject* hd = new SocketObject;
@@ -74,18 +76,58 @@ SocketObject* newSocketObject(int cfd, string hostname, string ip, string port)
     return hd;
 }
 
-vector<SocketObject> server_socketlist;
-
-void print_server_List(){
-    sort(server_socketlist.begin(), server_socketlist.end());
-    print_log_success("LIST");
-    int i = 0;
-    for (vector<SocketObject>::iterator it = server_socketlist.begin(); it != server_socketlist.end();i++,it++)
-    {
-        if(it->status == "logged-in")
-            cse4589_print_and_log("%-5d%-35s%-20s%-8d\n", i + 1, it->hostname.c_str(), it->ip.c_str(), it->port_num);
+SocketObject* server_find_socket(int cfd, string ip) 
+{
+    vector<SocketObject>::iterator it;
+    for (it = server_socketlist.begin(); it != server_socketlist.end(); ++it) {
+        if ((cfd != -1 && it->cfd == cfd) || (ip != "" && it->ip == ip)) {
+            return &(*it);
+        }
     }
-    print_log_end("LIST");
+    return NULL;
+}
+
+void print_List(string command, string requested_ip){
+    if(command == "LIST" && requested_ip == "NONE"){
+        sort(server_socketlist.begin(), server_socketlist.end());
+        print_log_success("LIST");
+        int i = 0;
+        for (vector<SocketObject>::iterator it = server_socketlist.begin(); it != server_socketlist.end();i++,it++)
+        {
+            if(it->status == "logged-in")
+                cse4589_print_and_log("%-5d%-35s%-20s%-8d\n", i + 1, it->hostname.c_str(), it->ip.c_str(), it->port_num);
+        }
+        print_log_end("LIST");
+    }
+    else if(command == "BLOCKED"){
+        // sort(server_socketlist.begin(), server_socketlist.end());
+
+        if(ip_exception_check(requested_ip)){
+            if(server_find_socket(-1, requested_ip)){
+                SocketObject *requested_socket = server_find_socket(-1, requested_ip);
+                print_log_success("BLOCKED");
+                int i = 0;
+                for (vector<string>::iterator it = requested_socket->blockeduser.begin(); it != requested_socket->blockeduser.end();i++,it++)
+                {
+                    SocketObject *element_socket = server_find_socket(-1,*it);
+                    if(element_socket == NULL){
+                        printf("Error in finding blocked clients...\n"); 
+                        return;
+                    }
+                    cse4589_print_and_log("%-5d%-35s%-20s%-8s\n", i + 1, element_socket->hostname.c_str(), element_socket->ip.c_str(), element_socket->port.c_str());
+                }
+                print_log_end("BLOCKED");
+            }
+        }
+        else{
+            print_log_error("BLOCKED");
+            printf("Invalid requested IP...\n");            
+            return;
+        }
+    }
+    else{
+        printf("incorrect command to print list\n");
+    }
 }
 
 void print_server_Statistics(){
@@ -97,17 +139,6 @@ void print_server_Statistics(){
         cse4589_print_and_log("%-5d%-35s%-8d%-8d%-8s\n", i + 1, it->hostname.c_str(), it->num_msg_sent, it->num_msg_rcv, it->status.c_str());
     }
     print_log_end("STATISTICS");
-}
-
-SocketObject* find_socket(int cfd, string ip) 
-{
-    vector<SocketObject>::iterator it;
-    for (it = server_socketlist.begin(); it != server_socketlist.end(); ++it) {
-        if ((cfd != -1 && it->cfd == cfd) || (ip != "" && it->ip == ip)) {
-            return &(*it);
-        }
-    }
-    return NULL;
 }
 
 int server_initialization(string port_number){
@@ -236,7 +267,19 @@ int server(string port_number){
                             getline(cin, command);
                             cout << "You Entered: " << command << endl;
 
-                            if(command == "AUTHOR"){
+                            vector<string> split_command = split_string(command, " ");
+
+                            if(split_command.size() == 2){
+                                if(split_command[0] == "BLOCKED"){
+                                    string requested_ip = split_command[1];
+                                    print_List("BLOCKED",requested_ip);
+                                }
+                                else{
+                                    print_log_error("BLOCKED");
+                                    printf("Incorrect command...\n");
+                                }
+                            }
+                            else if(command == "AUTHOR"){
                                 print_log_success(command);
                                 string ubitname = "rahulyad";
                                 cse4589_print_and_log("I, %s, have read and understood the course academic integrity policy.\n", ubitname.c_str());
@@ -254,10 +297,13 @@ int server(string port_number){
                                 print_log_end("PORT");
                             }
                             else if(command == "LIST"){
-                                print_server_List();
+                                print_List("LIST", "NONE");
                             }
                             else if(command == "STATISTICS"){
                                 print_server_Statistics();
+                            }
+                            else{
+                                printf("Incorrect command...\n");
                             }
                         }
                         // listening from new connections
@@ -305,7 +351,7 @@ int server(string port_number){
                                 cout<<"client_command= "<<client_command<<endl;
 
                                 if(split_client_command[0] == "LOGIN"){
-                                    SocketObject* currentSocketObject = find_socket(-1, split_client_command[2]);
+                                    SocketObject* currentSocketObject = server_find_socket(-1, split_client_command[2]);
                                     // Existing Client
                                     if(currentSocketObject != NULL){
                                         currentSocketObject->status = "logged-in";
@@ -339,7 +385,7 @@ int server(string port_number){
                                 else if(split_client_command[0] == "LOGOUT"){
                                     string incoming_ip = split_client_command[1];
                                     printf("logout requested by client ip:%s \n", incoming_ip.c_str());
-                                    SocketObject* currentSocketObject = find_socket(-1, incoming_ip);
+                                    SocketObject* currentSocketObject = server_find_socket(-1, incoming_ip);
                                     if(currentSocketObject == NULL){
                                         printf("client fd not found on this IP \n");
                                         return -1;
@@ -352,7 +398,7 @@ int server(string port_number){
                                 else if(split_client_command[0] == "REFRESH"){
                                     string incoming_ip = split_client_command[1];
                                     printf("refresh requested by client ip:%s \n", incoming_ip.c_str());
-                                    SocketObject* currentSocketObject = find_socket(-1, incoming_ip);
+                                    SocketObject* currentSocketObject = server_find_socket(-1, incoming_ip);
                                     if(currentSocketObject == NULL){
                                         printf("client fd not found on this IP \n");
                                         return -1;
@@ -387,8 +433,8 @@ int server(string port_number){
                                     printf("send requested by source_ip:%s \n", source_ip.c_str());
                                     printf("send requested to destination_ip:%s \n", destination_ip.c_str());
 
-                                    SocketObject* source_SocketObject = find_socket(-1, source_ip);
-                                    SocketObject* destination_SocketObject = find_socket(-1, destination_ip);
+                                    SocketObject* source_SocketObject = server_find_socket(-1, source_ip);
+                                    SocketObject* destination_SocketObject = server_find_socket(-1, destination_ip);
 
                                     if(source_SocketObject == NULL){
                                         printf("source_SocketObject not found on this IP \n");
@@ -451,6 +497,79 @@ int server(string port_number){
                                         }
                                     }
                                     cout<< "server_socketlist.size() after erase = "<< server_socketlist.size() << endl;
+                                }
+                                else if (split_client_command[0] == "BLOCK"){
+                                    string source_ip = split_client_command[1];
+                                    string destination_ip = split_client_command[2];
+
+                                    printf("block requested by source_ip:%s \n", source_ip.c_str());
+                                    printf("block requested to destination_ip:%s \n", destination_ip.c_str());
+
+                                    SocketObject* source_SocketObject = server_find_socket(-1, source_ip);
+                                    SocketObject* destination_SocketObject = server_find_socket(-1, destination_ip);
+
+                                    if(source_SocketObject == NULL || !ip_exception_check(source_ip)){
+                                        print_log_error("BLOCK");
+                                        printf("source_SocketObject not found or invalid IP. Please Check \n");
+                                        continue;
+                                    }
+                                    if(destination_SocketObject == NULL || !ip_exception_check(destination_ip)){
+                                        print_log_error("BLOCK");
+                                        printf("destination_SocketObject not found or invalid IP. Please Check \n");
+                                        continue;
+                                    }
+
+                                    vector<string>::iterator it = source_SocketObject->blockeduser.begin();
+
+                                    while(it != source_SocketObject->blockeduser.end()){
+                                        if(*it == destination_ip) break;
+                                        it++;
+                                    }
+
+                                    if(it != source_SocketObject->blockeduser.end()){
+                                        printf("User already blocked...\n");
+                                        continue;
+                                    }
+                                    else{
+                                        source_SocketObject->blockeduser.push_back(destination_ip);
+                                        printf("server successfully blocked the requested user...\n");
+                                    }
+                                }
+                                else if (split_client_command[0] == "UNBLOCK"){
+                                    string source_ip = split_client_command[1];
+                                    string destination_ip = split_client_command[2];
+
+                                    printf("unblock requested by source_ip:%s \n", source_ip.c_str());
+                                    printf("unblock requested to destination_ip:%s \n", destination_ip.c_str());
+
+                                    SocketObject* source_SocketObject = server_find_socket(-1, source_ip);
+                                    SocketObject* destination_SocketObject = server_find_socket(-1, destination_ip);
+
+                                    if(source_SocketObject == NULL || !ip_exception_check(source_ip)){
+                                        print_log_error("UNBLOCK");
+                                        printf("source_SocketObject not found or invalid IP. Please Check \n");
+                                        continue;
+                                    }
+                                    if(destination_SocketObject == NULL || !ip_exception_check(destination_ip)){
+                                        print_log_error("UNBLOCK");
+                                        printf("destination_SocketObject not found or invalid IP. Please Check \n");
+                                        continue;
+                                    }
+
+                                    vector<string>::iterator it = source_SocketObject->blockeduser.begin();
+
+                                    while(it != source_SocketObject->blockeduser.end()){
+                                        if(*it == destination_ip) break;
+                                        it++;
+                                    }
+
+                                    if(it != source_SocketObject->blockeduser.end()){
+                                        source_SocketObject->blockeduser.erase(it);
+                                        printf("server successfully unblocked the requested user...\n");
+                                    }
+                                    else{
+                                        printf("requested client is not present in the blocked list...\n");
+                                    }
                                 }
                             }
                         }

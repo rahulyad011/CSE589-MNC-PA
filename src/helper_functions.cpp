@@ -126,7 +126,7 @@ bool port_exception_check(const string& port_number) {
 }
 
 bool check_blocked(vector<string> blocked_ip_list, string ip){
-    vector<string> ::iterator it;
+    vector<string> ::iterator it = blocked_ip_list.begin();
     for(; it != blocked_ip_list.end(); it++){
         if(*it == ip){
             return true;

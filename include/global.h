@@ -71,7 +71,6 @@ public:
 // server.cpp
 int server(string port_num);
 SocketObject* newSocketObject(int cfd, string hostname, string ip, string port);
-SocketObject* find_socket(int cfd, string ip);
 
 //helper functions for sockets
 void printSocketList(const vector<SocketObject>& socketlist);
