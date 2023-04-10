@@ -379,6 +379,50 @@ int server(string port_number){
                                     // Existing Client
                                     if(currentSocketObject != NULL){
                                         currentSocketObject->status = "logged-in";
+                                        if(currentSocketObject->msgbuffer.size()){
+                                            printf("Getting ready to send saved/buffer messages...\n");
+
+                                            string message = "";
+                                            vector<string>::iterator it = currentSocketObject->msgbuffer.begin();
+                                            while(it != currentSocketObject->msgbuffer.end()){
+                                                message = *it;
+                                                int send_status = send(currentSocketObject->cfd, message.c_str(), message.length(), 0);
+                                                if(send_status >= 0){
+                                                    vector<string> buffer_relay= split_string(message, " ");
+
+                                                    printf("Inside Relay Print\n");
+
+                                                    vector<string>::iterator itr = buffer_relay.begin();
+                                                    itr++; 
+                                                    itr++;
+                                                    if(buffer_relay[0] == "BROADCAST"){
+                                                        buffer_relay.insert(it, "255.255.255.255");
+                                                    }   
+                                                    itr++;
+                                                    string content = "" + buffer_relay[3];
+                                                    itr++;
+                                                    while(itr != buffer_relay.end()){
+                                                        content += " " + *itr;
+                                                        itr++;
+                                                    }
+
+                                                    print_log_success("RELAYED");
+                                                    cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n", buffer_relay[1].c_str(), buffer_relay[2].c_str(), content.c_str());
+                                                    print_log_end("RELAYED");
+
+                                                    currentSocketObject->msgbuffer.erase(it);
+                                                }
+                                                else{
+                                                    // Keep trying to send the same message
+                                                    continue;
+                                                }
+                                            }
+                                            currentSocketObject->msgbuffer.clear();
+                                        }
+                                        else{
+                                            // empty buffer
+                                            printf("Buffer is empty, no pending messages to share...\n");
+                                        }
                                     }
                                     // New Client, Add it in Socket List
                                     else{
@@ -521,8 +565,9 @@ int server(string port_number){
                                     }
 
                                     string message = "";
-
+                                    bool log_in_check = false;
                                     vector<SocketObject>::iterator it;
+                                    
                                     for(it = server_socketlist.begin(); it != server_socketlist.end(); it++){
                                         // Skipping source from where the message was broadcasted
                                         if(it->ip == source_ip) continue;
@@ -548,6 +593,7 @@ int server(string port_number){
                                         // check if logged in
                                         if(it->status == "logged-in")
                                         {
+                                            log_in_check = true;
                                             int send_status = send(it->cfd, (const char*)message.c_str(),message.length(), 0);
                                             if(send_status < 0){
                                                 perror("Unable to send() to logged-in client during broadcast...\n");
@@ -560,11 +606,15 @@ int server(string port_number){
                                         }
                                     }
 
-                                    if(it == server_socketlist.end())
+                                    if(it == server_socketlist.end() && log_in_check)
                                     {
                                         print_log_success("RELAYED");
                                         cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n", source_ip.c_str(), destination_ip.c_str(), message.c_str());
                                         print_log_end("RELAYED");
+                                    }
+                                    else if(it == server_socketlist.end() && !log_in_check)
+                                    {
+                                        printf("All the clients are logged out so nothing to relay...\n");
                                     }                            
                                     else{
                                         print_log_error("BROADCAST");
