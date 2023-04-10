@@ -87,7 +87,13 @@ SocketObject* server_find_socket(int cfd, string ip)
     return NULL;
 }
 
-void print_List(string command, string requested_ip){
+struct KeyComparator {
+    bool operator()(const std::string& a, const std::string& b) const {
+        return string_to_int(a) < string_to_int(b);
+    }
+};
+
+int print_List(string command, string requested_ip){
     if(command == "LIST" && requested_ip == "NONE"){
         sort(server_socketlist.begin(), server_socketlist.end());
         print_log_success("LIST");
@@ -100,34 +106,49 @@ void print_List(string command, string requested_ip){
         print_log_end("LIST");
     }
     else if(command == "BLOCKED"){
-        // sort(server_socketlist.begin(), server_socketlist.end());
-
         if(ip_exception_check(requested_ip)){
             if(server_find_socket(-1, requested_ip)){
                 SocketObject *requested_socket = server_find_socket(-1, requested_ip);
-                print_log_success("BLOCKED");
-                int i = 0;
-                for (vector<string>::iterator it = requested_socket->blockeduser.begin(); it != requested_socket->blockeduser.end();i++,it++)
+
+                map<string, SocketObject> unsortedMap;
+
+                for (vector<string>::iterator it = requested_socket->blockeduser.begin(); it != requested_socket->blockeduser.end();it++)
                 {
                     SocketObject *element_socket = server_find_socket(-1,*it);
                     if(element_socket == NULL){
                         printf("Error in finding blocked clients...\n"); 
-                        return;
+                        return -1;
                     }
-                    cse4589_print_and_log("%-5d%-35s%-20s%-8s\n", i + 1, element_socket->hostname.c_str(), element_socket->ip.c_str(), element_socket->port.c_str());
+                    unsortedMap.insert(std::make_pair(element_socket->port, *element_socket));
+                }
+
+                std::map<std::string, SocketObject, KeyComparator> sortedMap(unsortedMap.begin(), unsortedMap.end());
+
+                print_log_success("BLOCKED");
+                int i=0;
+                for (std::map<std::string, SocketObject, KeyComparator>::const_iterator it = sortedMap.begin(); it != sortedMap.end(); i++, it++) {
+                    const SocketObject& element_socket = it->second;
+                    cse4589_print_and_log("%-5d%-35s%-20s%-8s\n", i + 1, element_socket.hostname.c_str(), element_socket.ip.c_str(), element_socket.port.c_str());
                 }
                 print_log_end("BLOCKED");
             }
+            else{
+                // print_log_error("BLOCKED");
+                printf("Server can't find the socket related to the requested ip...\n");
+                return -1;
+            }
         }
         else{
-            print_log_error("BLOCKED");
+            // print_log_error("BLOCKED");
             printf("Invalid requested IP...\n");            
-            return;
+            return -1;
         }
     }
     else{
         printf("incorrect command to print list\n");
     }
+
+    return 0;
 }
 
 void print_server_Statistics(){
@@ -272,10 +293,13 @@ int server(string port_number){
                             if(split_command.size() == 2){
                                 if(split_command[0] == "BLOCKED"){
                                     string requested_ip = split_command[1];
-                                    print_List("BLOCKED",requested_ip);
+                                    int print_status = print_List("BLOCKED",requested_ip);
+                                    if(print_status == -1){
+                                        print_log_error("BLOCKED");
+                                    }
                                 }
                                 else{
-                                    print_log_error("BLOCKED");
+                                    perror("BLOCKED");
                                     printf("Incorrect command...\n");
                                 }
                             }
