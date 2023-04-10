@@ -405,7 +405,7 @@ int server(string port_number){
                                                     cout<<"itr after 2 increment: "<<*itr<<endl;
                                                     string content = "";
                                                     if(buffer_relay[0] == "SEND"){
-                                                        it++;
+                                                        itr++;
                                                         content += buffer_relay[3];
                                                     }   
                                                     else if(buffer_relay[0] == "BROADCAST"){
@@ -544,10 +544,12 @@ int server(string port_number){
                                     it++; // Skip <destination IP>
 
                                     string message = "SEND " + source_ip + " " + destination_ip + " " +  *it;
+                                    string content = "" +  *it;
                                     it++;
                                     for (; it != split_client_command.end();it++)
                                     {
                                         message += " " + *it;
+                                        content += " " + *it;
                                     }
 
                                     // check if logged in
@@ -559,7 +561,7 @@ int server(string port_number){
                                         }
                                         else{
                                             print_log_success("RELAYED");
-                                            cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n", source_ip.c_str(), destination_ip.c_str(), message.c_str());
+                                            cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n", source_ip.c_str(), destination_ip.c_str(), content.c_str());
                                             print_log_end("RELAYED");
                                         }
                                     }else{
@@ -583,6 +585,7 @@ int server(string port_number){
                                     }
 
                                     string message = "";
+                                    string content = "";
                                     bool log_in_check = false;
                                     vector<SocketObject>::iterator it;
                                     
@@ -602,10 +605,12 @@ int server(string port_number){
                                         itr++; // Skip <source IP>
 
                                         message = "BROADCAST " + source_ip + " " +  *itr;
+                                        content = "" +  *itr;
                                         itr++;
                                         for (; itr != split_client_command.end();itr++)
                                         {
                                             message += " " + *itr;
+                                            content += " " + *itr;
                                         }
 
                                         // check if logged in
@@ -627,7 +632,7 @@ int server(string port_number){
                                     if(it == server_socketlist.end() && log_in_check)
                                     {
                                         print_log_success("RELAYED");
-                                        cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n", source_ip.c_str(), destination_ip.c_str(), message.c_str());
+                                        cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n", source_ip.c_str(), destination_ip.c_str(), content.c_str());
                                         print_log_end("RELAYED");
                                     }
                                     else if(it == server_socketlist.end() && !log_in_check)
