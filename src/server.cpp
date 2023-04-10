@@ -391,23 +391,41 @@ int server(string port_number){
                                                     vector<string> buffer_relay= split_string(message, " ");
 
                                                     printf("Inside Relay Print\n");
+                                                    cout<<"buffer_relay: ";
+                                                    for(std::vector<std::string>::const_iterator print_it = buffer_relay.begin(); print_it != buffer_relay.end(); ++print_it) {
+                                                        std::cout << *print_it << ' ';
+                                                    }
+                                                    std::cout << '\n';
 
                                                     vector<string>::iterator itr = buffer_relay.begin();
+                                                    cout<<"itr begin: "<<*itr<<endl;
                                                     itr++; 
+                                                    cout<<"itr after 1 increment: "<<*itr<<endl;
                                                     itr++;
-                                                    if(buffer_relay[0] == "BROADCAST"){
-                                                        buffer_relay.insert(it, "255.255.255.255");
+                                                    cout<<"itr after 2 increment: "<<*itr<<endl;
+                                                    string content = "";
+                                                    if(buffer_relay[0] == "SEND"){
+                                                        it++;
+                                                        content += buffer_relay[3];
                                                     }   
-                                                    itr++;
-                                                    string content = "" + buffer_relay[3];
+                                                    else if(buffer_relay[0] == "BROADCAST"){
+                                                        content += buffer_relay[2];
+                                                    } 
                                                     itr++;
                                                     while(itr != buffer_relay.end()){
                                                         content += " " + *itr;
                                                         itr++;
                                                     }
+                                                    itr--;
+                                                    cout<<"itr last: "<<*itr<<endl;
 
                                                     print_log_success("RELAYED");
-                                                    cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n", buffer_relay[1].c_str(), buffer_relay[2].c_str(), content.c_str());
+                                                    if(buffer_relay[0] == "SEND"){
+                                                        cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n", buffer_relay[1].c_str(), buffer_relay[2].c_str(), content.c_str());
+                                                    }
+                                                    else if(buffer_relay[0] == "BROADCAST"){
+                                                        cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n", buffer_relay[1].c_str(), "255.255.255.255", content.c_str());
+                                                    }
                                                     print_log_end("RELAYED");
 
                                                     currentSocketObject->msgbuffer.erase(it);
