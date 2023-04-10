@@ -506,6 +506,71 @@ int server(string port_number){
                                         printf("Message pushed into respective buffer for logged out client\n");
                                     }
                                 }
+                                else if(split_client_command[0] == "BROADCAST"){
+                                    string source_ip = split_client_command[1];
+                                    string destination_ip = "255.255.255.255";
+
+                                    printf("send requested by source_ip:%s \n", source_ip.c_str());
+                                    printf("send requested to all destination_ip:%s \n", destination_ip.c_str());
+
+                                    SocketObject* source_SocketObject = server_find_socket(-1, source_ip);
+
+                                    if(source_SocketObject == NULL){
+                                        printf("source_SocketObject not found on this IP \n");
+                                        continue;
+                                    }
+
+                                    string message = "";
+
+                                    vector<SocketObject>::iterator it;
+                                    for(it = server_socketlist.begin(); it != server_socketlist.end(); it++){
+                                        // Skipping source from where the message was broadcasted
+                                        if(it->ip == source_ip) continue;
+
+                                        if(check_blocked(it->blockeduser, source_ip)){
+                                            cout<<"source_ip: "<<source_ip << " blocked by client ip: "<<it->ip<<endl;
+                                            continue;
+                                        }
+
+                                        update_msg_statistics(source_SocketObject, &(*it));
+
+                                        vector<string>::iterator itr = split_client_command.begin();
+                                        itr++; // Skip "BROADCAST" word
+                                        itr++; // Skip <source IP>
+
+                                        message = "BROADCAST " + source_ip + " " +  *itr;
+                                        itr++;
+                                        for (; itr != split_client_command.end();itr++)
+                                        {
+                                            message += " " + *itr;
+                                        }
+
+                                        // check if logged in
+                                        if(it->status == "logged-in")
+                                        {
+                                            int send_status = send(it->cfd, (const char*)message.c_str(),message.length(), 0);
+                                            if(send_status < 0){
+                                                perror("Unable to send() to logged-in client during broadcast...\n");
+                                                break;
+                                            }
+                                        }else{
+                                            // if not logged-in, then buffer the message
+                                            it->msgbuffer.push_back(message);
+                                            printf("Message pushed into respective buffer for logged out client\n");
+                                        }
+                                    }
+
+                                    if(it == server_socketlist.end())
+                                    {
+                                        print_log_success("RELAYED");
+                                        cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n", source_ip.c_str(), destination_ip.c_str(), message.c_str());
+                                        print_log_end("RELAYED");
+                                    }                            
+                                    else{
+                                        print_log_error("BROADCAST");
+                                        printf("One of the send() method failed...\n");
+                                    }        
+                                }
                                 else if(split_client_command[0] == "EXIT"){
                                     cout<< "server_socketlist.size() before erase = "<< server_socketlist.size() << endl;
                                     for (vector<SocketObject>::iterator it = server_socketlist.begin(); it != server_socketlist.end();)

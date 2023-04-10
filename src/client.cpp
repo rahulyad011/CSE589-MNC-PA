@@ -226,6 +226,27 @@ int client(string port_number){
                         perror("Invalid IP...\n");
                     }
                 }
+                else if (split_command[0] == "BROADCAST" && client_login_status){
+                    printf("BROADCAST is selected by the client\n");
+
+                    string message = "BROADCAST " + client_ip;
+
+                    vector<string>::iterator it = split_command.begin();
+                    it++; // Skip "BROADCAST" word
+                    for (; it != split_command.end();it++)
+                    {
+                        message += " " + *it;
+                    }
+
+                    int send_status = send(client_socket_fd, (const char*)message.c_str(), message.length(), 0);
+                    if(send_status < 0){
+                        printf("Unable to execute send() for BROADCAST command from client...\n");
+                    }
+                    else{
+                        print_log_success("BROADCAST");
+                        print_log_end("BROADCAST");
+                    }
+                }
                 else if (split_command[0] == "BLOCK" && client_login_status){
                     printf("BLOCK is selected by the client\n");
                     string destination_ip = split_command[1];
@@ -470,6 +491,24 @@ int client(string port_number){
                                 it++; // Skip "SEND" word
                                 it++; // Skip <source IP>
                                 it++; // Skip <destination IP>
+
+                                string message = "" + *it;
+                                it++;
+                                for (; it != msg_params.end();it++)
+                                {
+                                    message += " " + *it;
+                                }
+
+                                print_log_success("RECEIVED");
+                                cse4589_print_and_log("msg from:%s\n[msg]:%s\n", msg_params[1].c_str(), message.c_str());
+                                print_log_end("RECEIVED");
+                            }
+                            else if (msg_params[0] == "BROADCAST"){
+                                // Incoming broadcast message
+                                
+                                vector<string>::iterator it = msg_params.begin();
+                                it++; // Skip "BROADCAST" word
+                                it++; // Skip <source IP>
 
                                 string message = "" + *it;
                                 it++;
