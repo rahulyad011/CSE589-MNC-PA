@@ -429,6 +429,7 @@ int server(string port_number){
                                                     print_log_end("RELAYED");
 
                                                     currentSocketObject->msgbuffer.erase(it);
+                                                    currentSocketObject->num_msg_rcv+=1;
                                                 }
                                                 else{
                                                     // Keep trying to send the same message
@@ -536,8 +537,6 @@ int server(string port_number){
                                         continue;
                                     }
 
-                                    update_msg_statistics(source_SocketObject, destination_SocketObject);
-
                                     vector<string>::iterator it = split_client_command.begin();
                                     it++; // Skip "SEND" word
                                     it++; // Skip <source IP>
@@ -560,12 +559,14 @@ int server(string port_number){
                                             perror("Unable to send() to logged-in client..\n");
                                         }
                                         else{
+                                            update_msg_statistics(source_SocketObject, destination_SocketObject);
                                             print_log_success("RELAYED");
                                             cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n", source_ip.c_str(), destination_ip.c_str(), content.c_str());
                                             print_log_end("RELAYED");
                                         }
                                     }else{
                                         // if not logged-in, then buffer the message
+                                        source_SocketObject->num_msg_sent+=1;
                                         destination_SocketObject->msgbuffer.push_back(message);
                                         printf("Message pushed into respective buffer for logged out client\n");
                                     }
