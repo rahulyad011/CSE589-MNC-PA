@@ -225,6 +225,7 @@ int client(string port_number){
                         print_log_error("SEND");
                         perror("Invalid IP...\n");
                     }
+                    fflush(NULL);
                 }
                 else if (split_command[0] == "BROADCAST" && client_login_status){
                     printf("BROADCAST is selected by the client\n");
@@ -246,6 +247,7 @@ int client(string port_number){
                         print_log_success("BROADCAST");
                         print_log_end("BROADCAST");
                     }
+                    fflush(NULL);
                 }
                 else if (split_command[0] == "BLOCK" && client_login_status){
                     printf("BLOCK is selected by the client\n");
@@ -528,6 +530,7 @@ int client(string port_number){
             }
 
             fflush(stdout);
+            fflush(NULL);
         }
     }
 

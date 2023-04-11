@@ -231,7 +231,7 @@ int server(string port_number){
     struct sockaddr_storage remoteaddr; // client address
     server_initialization_status = server_initialization(port_number);
     char remoteIP[INET6_ADDRSTRLEN];
-    char buf[256];    // buffer for client data
+    char buf[512];    // buffer for client data
     memset(buf, '\0', sizeof(buf));
     int nbytes;
     int i, j;
@@ -569,6 +569,7 @@ int server(string port_number){
                                         destination_SocketObject->msgbuffer.push_back(message);
                                         printf("Message pushed into respective buffer for logged out client\n");
                                     }
+                                    fflush(NULL);
                                 }
                                 else if(split_client_command[0] == "BROADCAST"){
                                     string source_ip = split_client_command[1];
@@ -642,7 +643,8 @@ int server(string port_number){
                                     else{
                                         print_log_error("BROADCAST");
                                         printf("One of the send() method failed...\n");
-                                    }        
+                                    }
+                                    fflush(NULL);        
                                 }
                                 else if(split_client_command[0] == "EXIT"){
                                     cout<< "server_socketlist.size() before erase = "<< server_socketlist.size() << endl;
@@ -744,6 +746,7 @@ int server(string port_number){
             perror("Server listner not in any category. Closing application...\n");
             return -1;
         }
+        fflush(NULL);
     }
     // END
     else{
