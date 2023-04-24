@@ -16,9 +16,12 @@
 /********* STUDENTS WRITE THE NEXT SEVEN ROUTINES *********/
 
 #include <iostream>
+#include <numeric>
 #include <vector>
-#include <string>
-
+#include <cstring>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 using namespace std;
 
 class Buffer {
@@ -113,7 +116,8 @@ float RTT = 10.0;
 Buffer buffer_obj;
 
 int calc_checksum(struct pkt *p) {
-  int sum = p->seqnum + p->acknum;
+  int sum = 0;
+  sum += p->seqnum + p->acknum;
   for (int i = 0; i < 20; i++) {
     sum += (int)p->payload[i];
   }
@@ -126,7 +130,7 @@ void copyArray(char* source_array, char* destination_array, int size) {
   }
 }
 
-void setArray(char* destination_array, char value, int size){
+void setArray(char* destination_array, int value, int size){
   for (int i = 0; i < size; i++) {
     destination_array[i] = value;
   }
@@ -138,7 +142,9 @@ void A_output(struct msg message)
   struct pkt* new_packet = new pkt();
   new_packet->seqnum = seq_a;
   new_packet->acknum = ack;
+  
   copyArray(message.data, new_packet->payload, 20);
+  new_packet->checksum = calc_checksum(new_packet);
   buffer_obj.add_pkt_wait_buffer(*new_packet);
   seq_a++;
 
@@ -187,16 +193,16 @@ void B_input(struct pkt packet)
 {
   if(packet.checksum == calc_checksum(&packet)){
     struct pkt* new_ack_packet = new pkt();
-    new_ack_packet->seqnum = seq_a;
+    new_ack_packet->seqnum = packet.seqnum;
     new_ack_packet->acknum = 1;
-    setArray(new_ack_packet->payload, '0', sizeof(new_ack_packet->payload));
-    tolayer3(1, *new_ack_packet);
 
+    setArray(new_ack_packet->payload, 0, sizeof(new_ack_packet->payload));
+    new_ack_packet->checksum = calc_checksum(new_ack_packet);
+    
+    tolayer3(1, *new_ack_packet);
     if(packet.seqnum == seq_b){
       tolayer5(1, packet.payload);
       seq_b = packet.seqnum + 1;
-    }
-    else{
       return;
     }
   }
