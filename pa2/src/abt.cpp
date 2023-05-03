@@ -112,6 +112,7 @@ public:
 int seq_a, seq_b;
 int ack;
 float RTT = 10.0;
+int WINDOW_SIZE = 1;
 
 Buffer buffer_obj;
 
@@ -124,7 +125,7 @@ int calc_checksum(struct pkt *p) {
   return sum;
 }
 
-void copyArray(char* source_array, char* destination_array, int size) {
+void copyArray(char* destination_array, char* source_array, int size) {
   for (int i = 0; i < size; i++) {
     destination_array[i] = source_array[i];
   }
@@ -143,12 +144,12 @@ void A_output(struct msg message)
   new_packet->seqnum = seq_a;
   new_packet->acknum = ack;
   
-  copyArray(message.data, new_packet->payload, 20);
+  copyArray(new_packet->payload, message.data, 20);
   new_packet->checksum = calc_checksum(new_packet);
   buffer_obj.add_pkt_wait_buffer(*new_packet);
   seq_a++;
 
-  if(buffer_obj.get_size_send_buffer() < 1 && buffer_obj.get_size_wait_buffer() > 0){
+  if(buffer_obj.get_size_send_buffer() < WINDOW_SIZE && buffer_obj.get_size_wait_buffer() > 0){
     tolayer3(0, *buffer_obj.transfer_pkt_wait_to_send());
     starttimer(0, RTT);
   }
@@ -161,7 +162,7 @@ void A_input(struct pkt packet)
   if(packet.checksum == calc_checksum(&packet) && packet.acknum == 1 && buffer_obj.fetch_pkt_with_seqnum_send_buffer(packet.seqnum)){
     stoptimer(0);
     buffer_obj.remove_pkt_with_seqnum_send_buffer(packet.seqnum);
-    if(buffer_obj.get_size_send_buffer() < 1 && buffer_obj.get_size_wait_buffer() > 0){
+    if(buffer_obj.get_size_send_buffer() < WINDOW_SIZE && buffer_obj.get_size_wait_buffer() > 0){
       tolayer3(0, *buffer_obj.transfer_pkt_wait_to_send());
       starttimer(0, RTT);
     }
