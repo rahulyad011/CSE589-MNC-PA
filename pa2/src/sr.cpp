@@ -152,6 +152,16 @@ public:
     bool is_ack_buffer_empty(){
       return ack_buffer.empty();
     }
+
+    struct pkt* setup(int seq_num, int ack_num){
+      struct pkt* packet = new pkt();
+      int temp_seq_number = seq_num;
+      int temp_ack_number = ack_num;
+      packet->seqnum = temp_seq_number;
+      packet->acknum = temp_ack_number;
+
+      return packet;
+    }
 };
 
 int ack, seq, recv_seq, window;
@@ -193,9 +203,7 @@ void setArray(char* destination_array, int value, int size){
 /* called from layer 5, passed the data to be sent to other side */
 void A_output(struct msg message)
 {
-  struct pkt* packet = new pkt();
-  packet->seqnum = seq;
-  packet->acknum = ack;
+  struct pkt* packet = buffer_obj.setup(seq, ack);
   setArray(packet->payload, 0, 20);
   copyArray(packet->payload, message.data, 20);
   packet->checksum = calc_checksum(packet);
@@ -332,8 +340,7 @@ void B_input(struct pkt packet)
         }
       }
       
-      struct pkt* min_packet;
-      min_packet = buffer_obj.fetch_pkt_with_seqnum_recv_buffer(seq_value);
+      struct pkt* min_packet = buffer_obj.fetch_pkt_with_seqnum_recv_buffer(seq_value);
 
       if(seq_value == recv_seq){
         tolayer5(1, min_packet->payload);
