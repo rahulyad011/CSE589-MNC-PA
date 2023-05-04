@@ -70,6 +70,7 @@ public:
           return 0;
         }
       }
+      cout<<"Can't remove pkt in recv_buffer related to seqnum = "<< seqnum <<". Returning -1"<<endl;
       return -1;
     }
 
@@ -312,8 +313,8 @@ void B_input(struct pkt packet)
     ack_packet->checksum = packet.seqnum + 1;
 
     tolayer3(1, *ack_packet);
-
-    if(buffer_obj.fetch_pkt_with_seqnum_recv_buffer(packet.seqnum) != NULL && packet.seqnum < recv_seq){  
+    
+    if(buffer_obj.fetch_pkt_with_seqnum_recv_buffer(packet.seqnum) != NULL || packet.seqnum < recv_seq){  
       return;
     }
 
@@ -330,8 +331,10 @@ void B_input(struct pkt packet)
           seq_value = it->seqnum;
         }
       }
+      
+      struct pkt* min_packet;
+      min_packet = buffer_obj.fetch_pkt_with_seqnum_recv_buffer(seq_value);
 
-      struct pkt* min_packet = buffer_obj.fetch_pkt_with_seqnum_recv_buffer(seq_value);
       if(seq_value == recv_seq){
         tolayer5(1, min_packet->payload);
         buffer_obj.remove_pkt_with_seqnum_recv_buffer(seq_value);
@@ -341,6 +344,9 @@ void B_input(struct pkt packet)
         break;
       }
     }
+  }
+  else{
+    return;
   }
 }
 
