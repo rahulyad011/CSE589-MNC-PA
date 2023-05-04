@@ -101,7 +101,6 @@ public:
 
     struct pkt* transfer_pkt_wait_to_send(){
       add_pkt_send_buffer(get_front_pkt_wait_buffer());
-      remove_pkt_wait_buffer();
 
       struct pkt front_pkt = get_front_pkt_wait_buffer();
       struct pkt* temp = &front_pkt;
@@ -152,6 +151,7 @@ void A_output(struct msg message)
   if(buffer_obj.get_size_send_buffer() < WINDOW_SIZE && buffer_obj.get_size_wait_buffer() > 0){
     tolayer3(0, *buffer_obj.transfer_pkt_wait_to_send());
     starttimer(0, RTT);
+    buffer_obj.remove_pkt_wait_buffer();
   }
   return;
 }
@@ -165,6 +165,7 @@ void A_input(struct pkt packet)
     if(buffer_obj.get_size_send_buffer() < WINDOW_SIZE && buffer_obj.get_size_wait_buffer() > 0){
       tolayer3(0, *buffer_obj.transfer_pkt_wait_to_send());
       starttimer(0, RTT);
+      buffer_obj.remove_pkt_wait_buffer();
     }
   }
 }
