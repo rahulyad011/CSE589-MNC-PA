@@ -1,0 +1,1 @@
+scp -r kchand@vortex.ccr.buffalo.edu:/user/kchand/Desktop/MNC/cse489589_assignment2/grader/out "C:\Users\Kunal Chand\Desktop"
