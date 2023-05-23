@@ -1,0 +1,11 @@
+Running simulator [10 Runs] ...
+[33mRun#1 [seed=1234] ... [0m [92mDone![0m
+[33mRun#2 [seed=1111] ... [0m [92mDone![0m
+[33mRun#3 [seed=2222] ... [0m [92mDone![0m
+[33mRun#4 [seed=3333] ... [0m [92mDone![0m
+[33mRun#5 [seed=4444] ... [0m [92mDone![0m
+[33mRun#6 [seed=5555] ... [0m [92mDone![0m
+[33mRun#7 [seed=6666] ... [0m [92mDone![0m
+[33mRun#8 [seed=7777] ... [0m [92mDone![0m
+[33mRun#9 [seed=8888] ... [0m [92mDone![0m
+[33mRun#10 [seed=9999] ... [0m [92mDone![0m
